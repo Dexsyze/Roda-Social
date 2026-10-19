@@ -128,7 +128,6 @@ let groups=[], myGroups=new Set(), users=[], fr={}, tags={}; const cache={}, see
 let REF=""; try{REF=(new URLSearchParams(location.search).get("ref")||localStorage.getItem("roda_ref")||"").toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12); if(REF) localStorage.setItem("roda_ref",REF);}catch{}
 const el = (tag, text, cls) => Object.assign(document.createElement(tag), {textContent: text || "", className: cls || ""});
 const toast = t => { const d=$("toast"); d.textContent=t; d.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>d.classList.remove("on"),2800); };
-
 async function getProf(id){
   if(cache[id]) return cache[id];
   try{
@@ -337,7 +336,6 @@ async function deleteMessage(m, table, rowEl){
   }
   toast("Mensagem apagada.");
 }
-
 function pickRx(table, id, anchor){
   const old=document.getElementById("rxpick"); if(old) old.remove();
   const box=el("div","", "rx"); box.id="rxpick";
@@ -530,7 +528,7 @@ async function openGroupDlg(g){
       if(geInput) geInput.disabled=false;
       sb.rpc("my_tag_trial_status").then(r=>{
         const s=r.data&&r.data[0];
-        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag. Aproveite!";
+        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag. Grupo funciona normal sem tag.";
         else if(!s.trial_used) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag.";
         else if(s.can_create) gi.textContent="VIP: tag permanente por 1 ano. Grupo funciona normal mesmo sem tag.";
         else gi.textContent=`Seu teste de 3 dias já foi usado e expirou. Grupo continua funcionando normal sem tag. VIP para criar novas tags.`;
