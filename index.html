@@ -65,6 +65,15 @@ label{display:block;font-weight:600;margin:14px 0 4px}
 .lnks a{padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:var(--side);color:var(--ink);text-decoration:none;font-size:.85rem;font-weight:600}
 .lnks a:hover{border-color:var(--brand)}
 .lnrow{display:flex;gap:8px;align-items:center;margin-top:8px}.lnrow span{width:92px;font-weight:600;flex-shrink:0}
+.rx{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.rx button{padding:1px 8px;font-size:.8rem;background:var(--side);border:1px solid var(--line);border-radius:999px;color:var(--ink)}
+.rx button.on{border-color:var(--brand)}
+.act2{margin-left:8px;opacity:.55}.act2 button{background:none;padding:0 3px;font-size:.85rem;color:var(--ink)}.msg:hover .act2{opacity:1}
+.quote{border-left:3px solid var(--brand);padding:1px 8px;margin:3px 0;color:var(--muted);font-size:.85rem}
+.msg img.m{max-width:min(320px,100%);border-radius:10px;display:block;margin-top:4px}.msg audio{max-width:100%;margin-top:4px}
+#rbar{display:flex;gap:8px;align-items:center;padding:6px 16px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+#rbar button{background:none;color:var(--ink);padding:0 6px}
+.gtg{color:#8b73ff;font-weight:800;font-size:.78rem;margin-right:5px}
 .sec{margin:20px 0 0;padding-top:4px;border-top:1px solid var(--line);font-weight:800}
 #swatches,#tswatches{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sw{width:30px;height:30px;border-radius:50%;padding:0;border:2px solid var(--line)}
@@ -149,7 +158,8 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
         <button id="leave" class="ghost hide">Sair do grupo</button>
       </div>
       <div class="feed" id="feed"></div>
-      <form class="send" id="form"><input id="inp" placeholder="Escreva uma mensagem" maxlength="1000" autocomplete="off"><button>Enviar</button></form>
+      <div id="rbar" class="hide"><span id="rtxt"></span><button id="rx_x" type="button" aria-label="Cancelar resposta">✕</button></div>
+      <form class="send" id="form"><button type="button" class="ghost hide" id="attach" aria-label="Enviar foto">📷</button><button type="button" class="ghost hide" id="mic" aria-label="Gravar áudio">🎤</button><input type="file" id="mfile" accept="image/png,image/jpeg,image/webp,image/gif" class="hide"><input id="inp" placeholder="Escreva uma mensagem" maxlength="1000" autocomplete="off"><button>Enviar</button></form>
     </div>
 
     <div id="profile" class="hide">
@@ -186,6 +196,8 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
         <div class="sec">Redes sociais</div>
         <div id="lnklist"></div>
         <p class="hint" id="lnkhint"></p>
+        <div class="sec">Tag de grupo</div>
+        <select id="wear"></select><p class="hint">A tag aparece na frente do seu nome. Só vale se o grupo estiver com a tag ativa.</p>
         <p class="err" id="perr" role="alert"></p>
         <div class="row"><button id="psave">Salvar perfil</button><button id="out" class="ghost">Sair da conta</button></div>
       </div>
@@ -197,6 +209,7 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
   <h2 style="margin-top:0" id="gtitle">Criar grupo</h2>
   <label for="gname">Nome do grupo</label><input id="gname" maxlength="30">
   <label for="gdesc">Descrição (opcional)</label><input id="gdesc" maxlength="150">
+  <div id="gtagw" class="hide"><label for="gtag">Tag do grupo (2 a 4 letras ou números)</label><input id="gtag" maxlength="4" placeholder="Ex.: RODA"><p class="hint" id="gtaginfo"></p></div>
   <label class="chk" style="margin-top:14px"><input type="checkbox" id="gpriv"> Grupo privado (só entra com convite ou link)</label>
   <p class="err" id="gerr" role="alert"></p>
   <div class="row"><button class="ghost" id="gcancel">Cancelar</button><button id="gok">Criar</button></div>
@@ -251,11 +264,12 @@ const SUPABASE_KEY = "sb_publishable_UA0xjaueCE3NKpn4Nr_B_A_ES_RvK-w";
 })();
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems";
-const GCOLS = "id,name,description,owner_id,created_at,is_private";
+const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
+const GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
 const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"], founder:["FUNDADOR","#ff9f43"]};
 const PREM = ["admin","founder","donor","vip"], ORDER = ["admin","founder","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
 let me, myProf, signup = false, started = false, ctx = {type:"global"}, tok = 0, accentSel = null, myBirth = null;
+let gtags = {}, replyTo = null, rxMap = {}, rec = null;
 let groups = [], myGroups = new Set(), users = [], fr = {}, tags = {};
 const cache = {}, seen = new Set();
 let REF = "";
@@ -276,6 +290,7 @@ function avatar(p){
 }
 function nameEl(p){
   const w = el("span", "", "nm"), s = el("strong", p.username);
+  if(gtags[p.id]) w.append(el("span", gtags[p.id], "gtg"));
   if(/^#[0-9a-f]{6}$/i.test(p.accent || "")) s.style.color = p.accent;
   if(p.effect === "gradient" || p.effect === "glow") s.classList.add("fx-" + p.effect);
   w.append(s);
@@ -287,6 +302,7 @@ async function loadTags(){
   const {data} = await sb.from("user_tags").select("*"); tags = {};
   (data || []).forEach(t => (tags[t.user_id] ||= []).push(t.tag));
   for(const k in tags) tags[k].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  const wt = await sb.rpc("worn_tags"); gtags = {}; (wt.data || []).forEach(x => gtags[x.user_id] = x.tag);
 }
 const hasTag = (...l) => (tags[me.id] || []).some(t => l.includes(t));
 const isPrem = id => (tags[id] || []).some(t => PREM.includes(t));
@@ -331,6 +347,8 @@ async function start(){
   rt("group_messages", m => ctx.type === "group" && m.group_id === ctx.id);
   rt("dms", m => ctx.type === "dm" && (m.sender_id === ctx.id || m.receiver_id === ctx.id));
   rt("announcements", () => ctx.type === "news");
+  const ping = () => sb.rpc("touch_seen"); ping(); setInterval(ping, 60000);
+  sb.channel("rx").on("postgres_changes",{event:"*",schema:"public",table:"message_reactions"}, e => { const r = e.new?.msg_id ? e.new : e.old; if(r?.msg_id) drawRx(r.msg_table, r.msg_id); }).subscribe();
   setInterval(async () => { await loadTags(); await loadFriends(); drawUsers(); }, 30000);
 }
 function drawMe(){
@@ -351,11 +369,41 @@ async function addMsg(m, table){
   const row = el("div", "", "msg" + (p.id === me.id ? " me" : "")), b = el("div", "", "b"), h = el("div");
   const nm = nameEl(p), av = avatar(p); nm.onclick = av.onclick = () => showProfile(p); nm.style.cursor = av.style.cursor = "pointer";
   h.append(nm, el("small", new Date(m.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})));
-  b.append(h, el("p", m.content)); row.append(av, b);
+  const id = String(m.id), act = el("span", "", "act2");
+  const rb = el("button", "↩"); rb.type = "button"; rb.title = "Responder"; rb.onclick = () => setReply(p.username, m.content);
+  const eb = el("button", "😊"); eb.type = "button"; eb.title = "Reagir"; eb.onclick = () => pickRx(table, id, eb);
+  act.append(rb, eb); h.append(act); b.append(h);
+  if(m.reply_text) b.append(el("div", m.reply_text, "quote"));
+  const mu = m.media_url || "";
+  if(mu.startsWith(SUPABASE_URL + "/storage/v1/object/public/chat-media/") && m.media_kind === "image"){ const i = document.createElement("img"); i.src = mu; i.alt = "Foto"; i.className = "m"; i.loading = "lazy"; b.append(i); }
+  else if(mu.startsWith(SUPABASE_URL + "/storage/v1/object/public/chat-media/") && m.media_kind === "audio"){ const a = document.createElement("audio"); a.src = mu; a.controls = true; a.preload = "none"; b.append(a); }
+  else b.append(el("p", m.content));
+  const rx = el("div", "", "rx"); rxMap[table + id] = rx; b.append(rx); drawRx(table, id);
+  row.append(av, b);
   const f = $("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop = f.scrollHeight;
 }
+async function drawRx(table, id){
+  const box = rxMap[table + id]; if(!box) return;
+  const {data} = await sb.from("message_reactions").select("emoji,user_id").eq("msg_table", table).eq("msg_id", id);
+  const c = {}; (data || []).forEach(r => { (c[r.emoji] ||= []).push(r.user_id); }); box.innerHTML = "";
+  Object.entries(c).forEach(([e, u]) => { const mine = u.includes(me.id), b = el("button", e + " " + u.length, mine ? "on" : ""); b.type = "button"; b.onclick = () => toggleRx(table, id, e, mine); box.append(b); });
+}
+async function toggleRx(table, id, emoji, mine){
+  const q = sb.from("message_reactions");
+  const r = mine ? await q.delete().eq("msg_table", table).eq("msg_id", id).eq("user_id", me.id).eq("emoji", emoji) : await q.insert({msg_table: table, msg_id: id, user_id: me.id, emoji});
+  if(r.error) toast("Não foi possível reagir."); drawRx(table, id);
+}
+function pickRx(table, id, anchor){
+  const old = document.getElementById("rxpick"); if(old) old.remove();
+  const box = el("div", "", "rx"); box.id = "rxpick";
+  ["👍","❤️","😂","😮","😢","🔥"].forEach(e => { const b = el("button", e); b.type = "button"; b.onclick = () => { box.remove(); toggleRx(table, id, e, false); }; box.append(b); });
+  anchor.closest(".b").append(box);
+}
+function setReply(name, text){ replyTo = name + ": " + (text || "").slice(0, 80); $("rtxt").textContent = "Respondendo a " + replyTo; $("rbar").classList.remove("hide"); $("inp").focus(); }
+$("rx_x").onclick = () => { replyTo = null; $("rbar").classList.add("hide"); };
 async function openCtx(c, title, sub, btn){
-  const t = ++tok; ctx = c; seen.clear(); show("chat"); mark(btn); closeSide();
+  const t = ++tok; ctx = c; seen.clear(); rxMap = {}; replyTo = null; $("rbar").classList.add("hide");
+  const mediaOk = c.type === "dm" || c.type === "group"; $("attach").classList.toggle("hide", !mediaOk); $("mic").classList.toggle("hide", !mediaOk || !window.MediaRecorder); show("chat"); mark(btn); closeSide();
   $("title").replaceChildren(title instanceof Node ? title : document.createTextNode(title));
   $("sub").textContent = sub || ""; $("feed").innerHTML = "";
   const isG = c.type === "group", member = !isG || myGroups.has(c.id), priv = isG && c.g.is_private;
@@ -380,8 +428,10 @@ async function openCtx(c, title, sub, btn){
 }
 function openGlobal(){ openCtx({type:"global"}, "# Chat global", "todo mundo conversa aqui", $("nGlobal")); }
 async function openDm(p, btn){
-  const {data: age} = await sb.rpc("age_of", {p: p.id});
-  openCtx({type:"dm", id: p.id}, clickName(p), [age ? age + " anos" : "", p.status || p.bio || ""].filter(Boolean).join(" · "), btn);
+  const [{data: age}, {data: ls}] = await Promise.all([sb.rpc("age_of", {p: p.id}), sb.from("profiles").select("last_seen").eq("id", p.id).single()]);
+  const t = ls && ls.last_seen ? new Date(ls.last_seen) : null, on = t && Date.now() - t < 120000;
+  const seenTxt = on ? "🟢 online" : t ? "visto por último " + t.toLocaleString("pt-BR", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"}) : "";
+  openCtx({type:"dm", id: p.id}, clickName(p), [seenTxt, age ? age + " anos" : "", p.status || p.bio || ""].filter(Boolean).join(" · "), btn);
 }
 $("nGlobal").onclick = openGlobal;
 $("nNews").onclick = () => openCtx({type:"news"}, "📢 Anúncios", "avisos oficiais da Roda (só leitura)", $("nNews"));
@@ -389,10 +439,36 @@ $("menu").onclick = () => $("side").classList.add("open");
 $("form").onsubmit = async e => {
   e.preventDefault(); const content = $("inp").value.trim(); if(!content) return; $("inp").value = "";
   let r;
-  if(ctx.type === "global") r = await sb.from("messages").insert({user_id: me.id, content});
-  else if(ctx.type === "group") r = await sb.from("group_messages").insert({group_id: ctx.id, user_id: me.id, content});
-  else r = await sb.from("dms").insert({sender_id: me.id, receiver_id: ctx.id, content});
-  if(r.error) $("inp").value = content;
+  r = await sendMsg({content, reply_text: replyTo});
+  if(r.error) $("inp").value = content; else { replyTo = null; $("rbar").classList.add("hide"); }
+};
+function sendMsg(x){
+  if(ctx.type === "global") return sb.from("messages").insert({user_id: me.id, content: x.content, reply_text: x.reply_text || null});
+  if(ctx.type === "group") return sb.from("group_messages").insert({group_id: ctx.id, user_id: me.id, ...x});
+  return sb.from("dms").insert({sender_id: me.id, receiver_id: ctx.id, ...x});
+}
+async function sendMedia(blob, ext, kind){
+  const path = `${me.id}/${Date.now()}.${ext}`;
+  const up = await sb.storage.from("chat-media").upload(path, blob, {contentType: blob.type});
+  if(up.error) return toast("Não foi possível enviar (máximo 5 MB).");
+  const url = sb.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
+  const r = await sendMsg({content: kind === "image" ? "📷 Foto" : "🎤 Áudio", media_url: url, media_kind: kind, reply_text: replyTo});
+  if(r.error) toast("Não foi possível enviar."); else { replyTo = null; $("rbar").classList.add("hide"); }
+}
+$("attach").onclick = () => $("mfile").click();
+$("mfile").onchange = async () => { const f = $("mfile").files[0]; $("mfile").value = ""; if(!f) return;
+  const ext = {"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[f.type];
+  if(!ext || f.size > 5e6) return toast("Use PNG, JPG, WEBP ou GIF de até 5 MB."); sendMedia(f, ext, "image"); };
+$("mic").onclick = async () => {
+  if(rec){ rec.stop(); return; }
+  try{
+    const st = await navigator.mediaDevices.getUserMedia({audio: true}), chunks = [];
+    rec = new MediaRecorder(st); $("mic").textContent = "⏹"; const tm = setTimeout(() => rec && rec.stop(), 60000);
+    rec.ondataavailable = e => chunks.push(e.data);
+    rec.onstop = () => { clearTimeout(tm); st.getTracks().forEach(t => t.stop()); const type = (rec.mimeType || "audio/webm").split(";")[0]; rec = null; $("mic").textContent = "🎤";
+      const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm"; const blob = new Blob(chunks, {type}); if(blob.size > 5e6) return toast("Áudio muito grande."); sendMedia(blob, ext, "audio"); };
+    rec.start(); toast("Gravando... toque em ⏹ para enviar (até 60 s).");
+  }catch{ toast("Não foi possível usar o microfone."); }
 };
 
 // ---------- pessoas e amigos ----------
@@ -459,6 +535,9 @@ function openGroupDlg(g){
   editing = g; $("gerr").textContent = "";
   $("gtitle").textContent = g ? "Editar grupo" : "Criar grupo"; $("gok").textContent = g ? "Salvar" : "Criar";
   $("gname").value = g ? g.name : ""; $("gdesc").value = g ? g.description : ""; $("gpriv").checked = g ? g.is_private : false;
+  $("gtagw").classList.toggle("hide", !g); $("gtag").value = g && g.tag ? g.tag : "";
+  const left = g && g.tag_expires ? Math.ceil((new Date(g.tag_expires) - Date.now()) / 864e5) : 0;
+  $("gtaginfo").textContent = left > 0 ? `Tag ativa por mais ${left} ${left === 1 ? "dia" : "dias"}.` : "Teste grátis de 2 dias (uma vez por conta). Depois, a tag dura 30 dias + 3 de bônus. Cada pessoa pode ter 1 grupo com tag.";
   $("gdlg").showModal();
 }
 $("newg").onclick = () => openGroupDlg(null);
@@ -475,6 +554,12 @@ $("gok").onclick = async () => {
   if(editing){
     const {data, error} = await sb.from("groups").update({name, description: $("gdesc").value.trim(), is_private: $("gpriv").checked}).eq("id", editing.id).select(GCOLS).single();
     if(error) return $("gerr").textContent = "Não foi possível salvar o grupo.";
+    const nt = $("gtag").value.trim().toUpperCase();
+    if(nt && nt !== (editing.tag || "")){
+      const t = await sb.rpc("set_group_tag", {gid: editing.id, new_tag: nt});
+      if(t.error){ const m = t.error.message; return $("gerr").textContent = m.includes("tag_invalida") ? "A tag precisa ter 2 a 4 letras ou números." : m.includes("tag_em_uso") ? "Essa tag já está em uso." : m.includes("tag_limite") ? "Você já tem outro grupo com tag ativa." : m.includes("tag_paga") ? "Seu teste grátis já foi usado. A tag paga ainda não está disponível." : "Não foi possível definir a tag."; }
+      await loadTags();
+    }
     $("gdlg").close(); await loadGroups(); return openGroup(data);
   }
   const {data, error} = await sb.from("groups").insert({name, description: $("gdesc").value.trim(), owner_id: me.id, is_private: $("gpriv").checked}).select(GCOLS).single();
@@ -705,6 +790,9 @@ function drawProfile(){
   emblemsSel = [...(myProf.emblems || [])]; drawEmblems();
   themeSel = myProf.theme || null; drawTheme(); bannerFile = null; bannerRemove = false; $("bfile").value = ""; drawBannerPrev();
   drawLinks();
+  const w = $("wear"); w.innerHTML = ""; w.append(new Option("Nenhuma", ""));
+  groups.filter(g => g.tag && new Date(g.tag_expires) > Date.now() && myGroups.has(g.id)).forEach(g => w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
+  w.value = myProf.worn_group || "";
 }
 $("pick").onclick = () => $("file").click();
 $("pav").onclick = () => $("file").click();
@@ -755,6 +843,7 @@ $("psave").onclick = async () => {
       m.includes("premium_only") ? "Cor livre é exclusiva para doadores e VIPs." :
       error.code === "23505" ? "Esse nome de usuário já está em uso." : "Não foi possível salvar.";
   }
+  if(($("wear").value || "") !== String(myProf.worn_group || "")){ const w = await sb.rpc("wear_group_tag", {gid: $("wear").value || null}); if(w.error) return perr.textContent = "Essa tag não está disponível."; await loadTags(); }
   const lerr = await saveLinks();
   const {data} = await sb.from("profiles").select(COLS).eq("id", me.id).single();
   myProf = cache[me.id] = data; if(upd.birthdate) myBirth = upd.birthdate;
