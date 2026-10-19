@@ -236,8 +236,24 @@ async function start(){
   try{ await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly(), loadItems()]); }catch(e){ console.warn(e) }
   const inv=new URLSearchParams(location.search).get("convite");
   if(!(inv && await useInvite(inv.toLowerCase()))) openGlobal();
-  const rt = (table, match) => sb.channel(table).on("postgres_changes",{event:"INSERT",schema:"public",table}, e=>{ if(match(e.new)) addMsg(e.new, table) }).subscribe();
-  rt("messages", ()=>ctx.type==="global"); rt("group_messages", m=>ctx.type==="group" && m.group_id===ctx.id); rt("dms", m=>ctx.type==="dm" && (m.sender_id===ctx.id || m.receiver_id===ctx.id)); rt("announcements", ()=>ctx.type==="news");
+  const rt = (table, match) => sb.channel(`realtime-${table}`)
+    .on("postgres_changes",{event:"INSERT",schema:"public",table}, e=>{ if(match(e.new)) addMsg(e.new, table) })
+    .on("postgres_changes",{event:"DELETE",schema:"public",table}, e=>{
+      const id=e.old?.id;
+      if(!id) return;
+      // só remove se for do contexto atual
+      if(table==="messages" && ctx.type!=="global") return;
+      if(table==="group_messages" && (ctx.type!=="group" || String(e.old.group_id)!==String(ctx.id))) return;
+      if(table==="dms" && ctx.type!=="dm") return;
+      const el=document.querySelector(`[data-mid="${id}"]`);
+      if(el) el.remove();
+      const key=table+id; seen.delete(key);
+    })
+    .subscribe();
+  rt("messages", ()=>ctx.type==="global"); 
+  rt("group_messages", m=>ctx.type==="group" && String(m.group_id)===String(ctx.id)); 
+  rt("dms", m=>ctx.type==="dm" && (String(m.sender_id)===String(ctx.id) || String(m.receiver_id)===String(ctx.id))); 
+  rt("announcements", ()=>ctx.type==="news");
   const ping=()=>sb.rpc("touch_seen"); ping(); setInterval(ping,60000);
   sb.channel("rx").on("postgres_changes",{event:"*",schema:"public",table:"message_reactions"}, e=>{ const r=e.new?.msg_id?e.new:e.old; if(r?.msg_id) drawRx(r.msg_table, r.msg_id); }).subscribe();
   setInterval(async()=>{ await loadTags(); await loadFriends(); drawUsers(); },30000);
