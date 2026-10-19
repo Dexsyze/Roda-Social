@@ -102,7 +102,7 @@ main{flex:1;min-width:0;display:flex;flex-direction:column}#chat{flex:1;min-heig
       </div></div>
   </main>
 </div>
-<dialog id="gdlg"><h2 style="margin-top:0" id="gtitle">Criar grupo</h2><label for="gname">Nome</label><input id="gname" maxlength="30"><label for="gdesc">Descrição</label><input id="gdesc" maxlength="150"><label for="gicon">Ícone (emoji opcional)</label><input id="gicon" maxlength="8" placeholder="🎮"><div id="gtagw" class="hide"><label for="gtag">Tag do grupo (2 a 4 letras/números)</label><div style="display:flex;gap:6px"><input id="gtag" maxlength="4" placeholder="RODA" style="flex:1"><input id="gtagemoji" maxlength="8" placeholder="🛡️" style="width:60px"></div><label for="gtagc">Cor da tag</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="gtagc" value="#8b73ff" style="width:56px"><button type="button" class="ghost" id="rmtag" style="padding:6px 10px;font-size:.85rem">Remover tag</button></div><p class="hint" id="gtaginfo">Deixe vazio pra grupo sem tag.</p></div><label class="chk" style="margin-top:14px"><input type="checkbox" id="gpriv"> Grupo privado</label><p class="err" id="gerr" role="alert"></p><div class="row"><button class="ghost" id="gcancel">Cancelar</button><button id="gok">Criar</button></div></dialog>
+<dialog id="gdlg"><h2 style="margin-top:0" id="gtitle">Criar grupo</h2><label for="gname">Nome</label><input id="gname" maxlength="30"><label for="gdesc">Descrição</label><input id="gdesc" maxlength="150"><label for="gicon">Ícone (emoji opcional)</label><input id="gicon" maxlength="8" placeholder="🎮"><div id="gtagw" class="hide"><label for="gtag">Tag do grupo (2 a 4 letras/números)</label><div style="display:flex;gap:6px"><input id="gtag" maxlength="4" placeholder="RODA" style="flex:1"><input id="gtagemoji" maxlength="8" placeholder="🛡️" style="width:60px"></div><label for="gtagc">Cor da tag</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="gtagc" value="#8b73ff" style="width:56px"><button type="button" class="ghost" id="rmtag" style="padding:6px 10px;font-size:.85rem">Remover tag</button></div><p class="hint" id="gtaginfo">Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag.</p></div><p class="hint" style="margin-top:8px">Máximo 3 grupos por conta. VIP ilimitado.</p><label class="chk" style="margin-top:14px"><input type="checkbox" id="gpriv"> Grupo privado</label><p class="err" id="gerr" role="alert"></p><div class="row"><button class="ghost" id="gcancel">Cancelar</button><button id="gok">Criar</button></div></dialog>
 <dialog id="mdlg"><h2 style="margin-top:0" id="mtitle">Membros do grupo</h2><div id="mlist" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;margin:12px 0"></div><p class="err" id="merr"></p><div class="row"><button class="ghost" id="mclose">Fechar</button></div></dialog>
 <dialog id="jdlg"><h2 style="margin-top:0">Entrar com convite</h2><label for="jcode">Cole o link ou código</label><input id="jcode"><p class="err" id="jerr" role="alert"></p><div class="row"><button class="ghost" id="jcancel">Cancelar</button><button id="jok">Entrar</button></div></dialog>
 <dialog id="pdlg"><div class="pcard" id="pcard"><div class="ptop" id="pctop"></div><div class="pbody"><div id="pcav"></div><h2 id="pcname"></h2><div class="hint" id="pcstatus"></div><div class="emb hide" id="pcemb"></div><div class="lnks hide" id="pclnk"></div><div class="psec" id="pcbiow"><div class="lbl">Sobre mim</div><p id="pcbio"></p></div><div class="pgrid"><div class="psec"><div class="lbl">Membro desde</div><div id="pcsince"></div></div><div class="psec" id="pcagew"><div class="lbl">Idade</div><div id="pcage"></div></div><div class="psec" id="pcinvw"><div class="lbl">Convidou</div><div id="pcinv"></div></div></div><div class="row"><button id="pcdm"></button><button class="ghost" id="pcfr">Adicionar amigo</button><button class="ghost" id="pcx">Fechar</button></div></div></div></dialog>
@@ -469,7 +469,23 @@ function openGroupDlg(g){
   const gt=$("gtag"); if(gt) gt.value=g&&g.tag?g.tag:"";
   const ge=$("gtagemoji"); if(ge) ge.value=g&&g.tag_emoji?g.tag_emoji:"";
   const left=g&&g.tag_expires?Math.ceil((new Date(g.tag_expires)-Date.now())/864e5):0;
-  const gi=$("gtaginfo"); if(gi) gi.textContent=left>0?`Tag ativa por mais ${left} ${left===1?"dia":"dias"}.`:"Deixe vazio pra grupo sem tag.";
+  const gi=$("gtaginfo"); 
+  if(gi){
+    if(left>0){
+      const editsLeft = 5 - (g.tag_edit_count||0);
+      gi.textContent=`Tag ativa por mais ${left} ${left===1?"dia":"dias"}. Edições restantes: ${editsLeft}/5.`;
+    } else {
+      // busca status do trial
+      sb.rpc("my_tag_trial_status").then(r=>{
+        const s=r.data&&r.data[0];
+        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta).";
+        else if(!s.trial_used) gi.textContent="Teste grátis de 3 dias (uma vez por conta).";
+        else if(s.can_create) gi.textContent="VIP: tag permanente.";
+        else gi.textContent=`Seu teste já foi usado. Expirou há ${Math.abs(s.days_left)} dias. VIP para criar novas tags.`;
+      });
+      gi.textContent="Teste grátis de 3 dias (uma vez por conta).";
+    }
+  }
   const rm=$("rmtag"); if(rm){ rm.onclick=async()=>{ if(!editing||!editing.id) return; if(!confirm("Remover a tag deste grupo?")) return; const r=await sb.from("groups").update({tag:null,tag_expires:null,tag_color:null,tag_emoji:null}).eq("id",editing.id); if(r.error) return $("gerr").textContent="Erro: "+r.error.message; const gti=$("gtag"); if(gti) gti.value=""; const gte=$("gtagemoji"); if(gte) gte.value=""; toast("Tag do grupo removida."); }; }
   $("gdlg").showModal();
 }
@@ -518,22 +534,52 @@ $("gmembers").onclick=async()=>{
 $("gcancel").onclick=()=>$("gdlg").close();
 $("gok").onclick=async()=>{
   const name=$("gname").value.trim(); if(name.length<3) return $("gerr").textContent="Nome precisa ter pelo menos 3 letras.";
+  const nt=$("gtag")?$("gtag").value.trim().toUpperCase():"";
+  const nc=$("gtagc")?$("gtagc").value:null;
+  const ne=$("gtagemoji")?$("gtagemoji").value.trim():"";
+  if(nt && !/^[A-Z0-9]{2,4}$/.test(nt)) return $("gerr").textContent="Tag 2 a 4 letras/números.";
   if(editing){
-    const er=await sb.rpc("edit_group", {gid: editing.id, new_name: name, new_desc: $("gdesc").value.trim(), new_priv: $("gpriv").checked, new_icon: $("gicon").value.trim()||null, new_color: $("gtagc").value});
+    const er=await sb.rpc("edit_group", {gid: editing.id, new_name: name, new_desc: $("gdesc").value.trim(), new_priv: $("gpriv").checked, new_icon: $("gicon").value.trim()||null, new_color: nc});
     if(er.error) return $("gerr").textContent="Não foi possível salvar. Rode o SQL novo no Supabase. "+er.error.message;
-    const {data}=await sb.from("groups").select(GCOLS).eq("id", editing.id).single();
-    const nt=$("gtag").value.trim().toUpperCase();
-    if(nt && nt!==(editing.tag||"")){
-      const t=await sb.rpc("set_group_tag", {gid: editing.id, new_tag: nt});
-      if(t.error){ const m=t.error.message; return $("gerr").textContent=m.includes("tag_invalida")?"Tag 2 a 4 letras/números.":m.includes("tag_em_uso")?"Tag já em uso.":m.includes("tag_limite")?"Já tem outro grupo com tag.":m.includes("tag_paga")?"Teste já usado.":"Não foi possível: "+m; }
+    // salva tag se mudou
+    if(nt!== (editing.tag||"").toUpperCase()){
+      if(nt){
+        const t=await sb.rpc("set_group_tag", {gid: editing.id, new_tag: nt, new_color: nc, new_emoji: ne||null});
+        if(t.error){ const m=t.error.message; return $("gerr").textContent=m.includes("tag_invalida")?"Tag 2 a 4 letras/números.":m.includes("tag_em_uso")?"Tag já em uso por outro grupo.":m.includes("tag_limite")?"Você já tem outro grupo com tag ativa.":m.includes("tag_paga")?"Seu teste grátis de 2 dias já foi usado.":"Não foi possível salvar tag: "+m; }
+      } else {
+        // remove tag se deixou vazio
+        const rt=await sb.from("groups").update({tag:null, tag_expires:null, tag_color:null, tag_emoji:null}).eq("id", editing.id);
+        if(rt.error) return $("gerr").textContent="Erro ao remover tag: "+rt.error.message;
+      }
+    } else if(nt){
+      // só atualizou cor/emoji
+      const upd={tag_color: nc, tag_emoji: ne||null};
+      await sb.from("groups").update(upd).eq("id", editing.id);
     }
     const {data: fresh}=await sb.from("groups").select(GCOLS).eq("id", editing.id).single();
-    await loadTags(); $("gdlg").close(); await loadGroups(); if(nt&&nt!==(editing.tag||"")) toast("Tag "+nt+" salva."); return openGroup(fresh||data);
+    await loadTags(); $("gdlg").close(); await loadGroups(); 
+    if(nt && nt!==(editing.tag||"")) toast("Tag ["+nt+"] salva!");
+    else toast("Grupo salvo.");
+    return openGroup(fresh||fresh);
   }
+  // CRIANDO NOVO GRUPO
   const {data, error}=await sb.from("groups").insert({name, description:$("gdesc").value.trim(), owner_id: me.id, is_private:$("gpriv").checked, ...($("gicon").value.trim()?{icon:$("gicon").value.trim()}:{})}).select(GCOLS).single();
-  if(error) return $("gerr").textContent="Não foi possível criar o grupo.";
+  if(error) return $("gerr").textContent="Não foi possível criar o grupo: "+error.message;
   await sb.from("group_members").insert({group_id: data.id, user_id: me.id});
-  $("gdlg").close(); $("gname").value=$("gdesc").value=$("gicon").value=""; $("gpriv").checked=false; await loadGroups(); openGroup(data);
+  if(nt){
+    const t=await sb.rpc("set_group_tag", {gid: data.id, new_tag: nt, new_color: nc, new_emoji: ne||null});
+    if(t.error){
+      $("gdlg").close(); await loadGroups(); openGroup(data);
+      return toast("Grupo criado, mas tag não foi: "+t.error.message);
+    }
+  }
+  $("gdlg").close(); 
+  const gt=$("gtag"); if(gt) gt.value=""; const ge=$("gtagemoji"); if(ge) ge.value="";
+  $("gname").value=$("gdesc").value=$("gicon").value=""; $("gpriv").checked=false; 
+  await loadGroups(); 
+  const {data: fresh2}=await sb.from("groups").select(GCOLS).eq("id", data.id).single();
+  openGroup(fresh2||data);
+  if(nt) toast("Grupo ["+nt+"] criado!");
 };
 $("join").onclick=async()=>{ const {error}=await sb.from("group_members").insert({group_id: ctx.id, user_id: me.id}); if(error) return toast("Não foi possível entrar."); const g=ctx.g; await loadGroups(); openGroup(g); };
 $("leave").onclick=async()=>{ if(!confirm("Sair deste grupo?")) return; await sb.from("group_members").delete().eq("group_id", ctx.id).eq("user_id", me.id); await loadGroups(); openGlobal(); };
