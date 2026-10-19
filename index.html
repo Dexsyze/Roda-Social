@@ -75,6 +75,10 @@ details.sec>summary{cursor:pointer;font-weight:800}details.sec>summary::marker{c
 #rbar{display:flex;gap:8px;align-items:center;padding:6px 16px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
 #rbar button{background:none;color:var(--ink);padding:0 6px}
 .gtg{color:#8b73ff;font-weight:800;font-size:.78rem;margin-right:5px}
+.vip{margin:0 0 14px;padding:18px;border-radius:16px;border:1px solid #3a2a8f;background:linear-gradient(160deg,#1b1450,var(--panel) 70%);max-width:780px}
+.vip h3{margin:0;font-size:1.2rem}.vip .pr{color:#b48cff;font-weight:800;margin:2px 0 12px}
+.vip ul{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}.vip li b{display:block}.vip li span{color:var(--muted);font-size:.88rem}
+.vip li::before{content:"✓ ";color:var(--ok);font-weight:800}
 .sec{margin:20px 0 0;padding-top:4px;border-top:1px solid var(--line);font-weight:800}
 #swatches,#tswatches{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sw{width:30px;height:30px;border-radius:50%;padding:0;border:2px solid var(--line)}
@@ -267,8 +271,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 let COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
 let GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
-const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"], founder:["FUNDADOR","#ff9f43"]};
-const PREM = ["admin","founder","donor","vip"], ORDER = ["admin","founder","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
+const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], founder:["FUNDADOR","#ff9f43"]};
+const PREM = ["admin","founder","vip"], ORDER = ["admin","founder","mod","vip"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
 let me, myProf, signup = false, started = false, ctx = {type:"global"}, tok = 0, accentSel = null, myBirth = null;
 let gtags = {}, replyTo = null, rxMap = {}, rec = null;
 let groups = [], myGroups = new Set(), users = [], fr = {}, tags = {};
@@ -295,7 +299,7 @@ function nameEl(p){
   if(/^#[0-9a-f]{6}$/i.test(p.accent || "")) s.style.color = p.accent;
   if(p.effect === "gradient" || p.effect === "glow") s.classList.add("fx-" + p.effect);
   w.append(s);
-  (tags[p.id] || []).forEach(t => { const x = el("span", TAGS[t][0], "tag"); x.style.color = TAGS[t][1]; w.append(x); });
+  (tags[p.id] || []).filter(t => TAGS[t]).forEach(t => { const x = el("span", TAGS[t][0], "tag"); x.style.color = TAGS[t][1]; w.append(x); });
   return w;
 }
 function clickName(p){ const n = nameEl(p); n.style.cursor = "pointer"; n.onclick = () => showProfile(p); return n; }
@@ -405,11 +409,18 @@ function pickRx(table, id, anchor){
 }
 function setReply(name, text){ replyTo = name + ": " + (text || "").slice(0, 80); $("rtxt").textContent = "Respondendo a " + replyTo; $("rbar").classList.remove("hide"); $("inp").focus(); }
 $("rx_x").onclick = () => { replyTo = null; $("rbar").classList.add("hide"); };
+function vipCard(){
+  const d = el("div", "", "vip"), ul = el("ul"), how = el("p", VIP_HOW, "hint"); how.classList.add("hide");
+  d.append(el("h3", "Seja " + PLUS), el("div", VIP_PRICE, "pr"));
+  VIP_PERKS.forEach(([t, x]) => { const li = el("li"); li.append(el("b", t), el("span", x)); ul.append(li); });
+  const b = el("button", "Quero ser VIP"); b.type = "button"; b.onclick = () => how.classList.toggle("hide");
+  d.append(ul, b, how); return d;
+}
 async function openCtx(c, title, sub, btn){
   const t = ++tok; ctx = c; seen.clear(); rxMap = {}; replyTo = null; $("rbar").classList.add("hide");
   const mediaOk = c.type === "dm" || c.type === "group"; $("attach").classList.toggle("hide", !mediaOk); $("mic").classList.toggle("hide", !mediaOk || !window.MediaRecorder); show("chat"); mark(btn); closeSide();
   $("title").replaceChildren(title instanceof Node ? title : document.createTextNode(title));
-  $("sub").textContent = sub || ""; $("feed").innerHTML = "";
+  $("sub").textContent = sub || ""; $("feed").innerHTML = ""; if(c.type === "news") $("feed").append(vipCard());
   const isG = c.type === "group", member = !isG || myGroups.has(c.id), priv = isG && c.g.is_private;
   $("form").classList.toggle("hide", !member || c.type === "news");
   $("join").classList.toggle("hide", member);
@@ -685,7 +696,10 @@ async function showProfile(p){
 $("pcx").onclick = () => $("pdlg").close();
 const FX = [[null, "Nenhum", 0], ["ring", "Anel animado", 1], ["gradient", "Nome em degradê", 3], ["glow", "Brilho no nome", 5], ["aurora", "Perfil aurora", 10]];
 let fxSel = null, myInv = 0, themeSel = null, bannerFile = null, bannerRemove = false;
-const THEMES = ["#3a2a8f", "#0f5c4a", "#1b3f8a", "#7a1d1d"], PLUS = "Roda Plus"; // troque PLUS pelo nome que você escolher
+const THEMES = ["#3a2a8f", "#0f5c4a", "#1b3f8a", "#7a1d1d"], PLUS = "Roda VIP";
+// ====== EDITE AQUI: preço e como assinar o VIP ======
+const VIP_PRICE = "R$ 9,90 por mês", VIP_HOW = "Para assinar, faça o Pix para a chave SUA_CHAVE_PIX e envie o comprovante para @seu_contato. Seu VIP é liberado em até 24 horas.";
+const VIP_PERKS = [["Nome com qualquer cor", "Escolha a cor que quiser, não só as 4 padrão."], ["Todos os efeitos animados", "Anel, degradê, brilho e perfil aurora liberados."], ["Banner em GIF e tema livre", "Seu perfil em movimento e com a sua cor."], ["Todas as redes no perfil", "Até 7 redes, em vez de 3."], ["Tag VIP no nome", "Todo mundo vê que você apoia a Roda."], ["Apoia o projeto", "Ajuda a Roda a continuar crescendo."]];
 function drawFx(){
   const prem = isPrem(me.id), box = $("fxlist"); box.innerHTML = "";
   FX.forEach(([id, label, inv]) => {
@@ -777,7 +791,7 @@ function drawSwatches(){
   });
   const prem = isPrem(me.id); $("pcolor").disabled = !prem;
   if(accentSel) $("pcolor").value = accentSel;
-  $("chint").textContent = prem ? "Como doador, você pode usar qualquer cor." : "Cor livre é exclusiva para doadores e VIPs.";
+  $("chint").textContent = prem ? "Como VIP, você pode usar qualquer cor." : "Cor livre é exclusiva para VIPs.";
   const pv = $("phead").querySelector("strong"); if(pv) pv.style.color = accentSel || "";
 }
 $("pcolor").oninput = e => { accentSel = e.target.value; drawSwatches(); };
@@ -846,7 +860,7 @@ $("psave").onclick = async () => {
       m.includes("birthdate_locked") ? "A data de nascimento não pode ser alterada." :
       m.includes("emblem_bloqueado") ? "Você ainda não tem um desses emblemas." :
       m.includes("effect_locked") ? "Esse efeito ainda está bloqueado. Convide mais amigos para liberar." :
-      m.includes("premium_only") ? "Cor livre é exclusiva para doadores e VIPs." :
+      m.includes("premium_only") ? "Cor livre é exclusiva para VIPs." :
       error.code === "23505" ? "Esse nome de usuário já está em uso." : "Não foi possível salvar.";
   }
   if(($("wear").value || "") !== String(myProf.worn_group || "")){ const w = await sb.rpc("wear_group_tag", {gid: $("wear").value || null}); if(w.error) return perr.textContent = "Essa tag não está disponível."; await loadTags(); }
