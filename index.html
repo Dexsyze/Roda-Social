@@ -97,12 +97,12 @@ main{flex:1;min-width:0;display:flex;flex-direction:column}#chat{flex:1;min-heig
         <details class="sec"><summary>Nome, efeitos e emblemas</summary><label>Cor do nome</label><div id="swatches"></div><label for="pcolor">Cor livre</label><input type="color" id="pcolor" value="#8b73ff"><p class="hint" id="chint"></p><label>Efeito animado</label><div id="fxlist"></div><p class="hint" id="fxhint"></p><label>Emblemas (até 3)</label><div class="emb" id="emblist"></div><p class="hint" id="embhint"></p></details>
         <details class="sec"><summary>Banner e tema</summary><label>Banner do perfil</label><div class="bprev" id="bprev"></div><input type="file" id="bfile" accept="image/png,image/jpeg,image/webp,image/gif" class="hide"><div class="row" style="margin-top:8px"><button type="button" class="ghost" id="bpick">Escolher banner</button><button type="button" class="ghost" id="brem">Remover banner</button></div><label>Tema do perfil</label><div id="tswatches"></div><label for="tcolor">Tema livre</label><input type="color" id="tcolor" value="#3a2a8f"><p class="hint" id="bhint2"></p></details>
         <details class="sec"><summary id="lsum">Redes sociais</summary><div id="lnklist"></div><p class="hint" id="lnkhint"></p></details>
-        <div class="sec">Tag de grupo</div><select id="wear"></select><p class="hint" id="wearh"></p>
+        <div class="sec">Tag de grupo</div><div style="display:flex;gap:6px;align-items:center"><select id="wear" style="flex:1"></select><button type="button" id="rmWear" title="Remover tag do perfil (ficar sem)" style="width:32px;height:32px;min-width:32px;padding:0;border-radius:8px;background:transparent;border:1.5px solid #ff6b9a;color:#ff6b9a;font-weight:800;line-height:1">✕</button></div><p class="hint" id="wearh"></p>
         <p class="err" id="perr" role="alert"></p><div class="row"><button id="psave">Salvar perfil</button><button id="out" class="ghost">Sair</button></div>
       </div></div>
   </main>
 </div>
-<dialog id="gdlg"><h2 style="margin-top:0" id="gtitle">Criar grupo</h2><label for="gname">Nome</label><input id="gname" maxlength="30"><label for="gdesc">Descrição</label><input id="gdesc" maxlength="150"><label for="gicon">Ícone (emoji opcional)</label><input id="gicon" maxlength="8" placeholder="🎮"><div id="gtagw" class="hide"><label for="gtag">Tag do grupo (2 a 4 letras/números)</label><input id="gtag" maxlength="4" placeholder="RODA"><label for="gtagc">Cor da tag</label><input type="color" id="gtagc" value="#8b73ff"><p class="hint" id="gtaginfo"></p></div><label class="chk" style="margin-top:14px"><input type="checkbox" id="gpriv"> Grupo privado</label><p class="err" id="gerr" role="alert"></p><div class="row"><button class="ghost" id="gcancel">Cancelar</button><button id="gok">Criar</button></div></dialog>
+<dialog id="gdlg"><h2 style="margin-top:0" id="gtitle">Criar grupo</h2><label for="gname">Nome</label><input id="gname" maxlength="30"><label for="gdesc">Descrição</label><input id="gdesc" maxlength="150"><label for="gicon">Ícone (emoji opcional)</label><input id="gicon" maxlength="8" placeholder="🎮"><div id="gtagw" class="hide"><label for="gtag">Tag do grupo (2 a 4 letras/números)</label><div style="display:flex;gap:6px"><input id="gtag" maxlength="4" placeholder="RODA" style="flex:1"><input id="gtagemoji" maxlength="8" placeholder="🛡️" style="width:60px"></div><label for="gtagc">Cor da tag</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="gtagc" value="#8b73ff" style="width:56px"><button type="button" class="ghost" id="rmtag" style="padding:6px 10px;font-size:.85rem">Remover tag</button></div><p class="hint" id="gtaginfo">Deixe vazio pra grupo sem tag.</p></div><label class="chk" style="margin-top:14px"><input type="checkbox" id="gpriv"> Grupo privado</label><p class="err" id="gerr" role="alert"></p><div class="row"><button class="ghost" id="gcancel">Cancelar</button><button id="gok">Criar</button></div></dialog>
 <dialog id="jdlg"><h2 style="margin-top:0">Entrar com convite</h2><label for="jcode">Cole o link ou código</label><input id="jcode"><p class="err" id="jerr" role="alert"></p><div class="row"><button class="ghost" id="jcancel">Cancelar</button><button id="jok">Entrar</button></div></dialog>
 <dialog id="pdlg"><div class="pcard" id="pcard"><div class="ptop" id="pctop"></div><div class="pbody"><div id="pcav"></div><h2 id="pcname"></h2><div class="hint" id="pcstatus"></div><div class="emb hide" id="pcemb"></div><div class="lnks hide" id="pclnk"></div><div class="psec" id="pcbiow"><div class="lbl">Sobre mim</div><p id="pcbio"></p></div><div class="pgrid"><div class="psec"><div class="lbl">Membro desde</div><div id="pcsince"></div></div><div class="psec" id="pcagew"><div class="lbl">Idade</div><div id="pcage"></div></div><div class="psec" id="pcinvw"><div class="lbl">Convidou</div><div id="pcinv"></div></div></div><div class="row"><button id="pcdm"></button><button class="ghost" id="pcfr">Adicionar amigo</button><button class="ghost" id="pcx">Fechar</button></div></div></div></dialog>
 <dialog id="rdlg" style="text-align:center"><p class="hint" style="margin-top:0">Você ganhou</p><div class="rwd-e" id="rwdE"></div><h2 id="rwdN" style="margin:6px 0 2px"></h2><div id="rwdR" style="font-weight:700"></div><div class="row"><button class="ghost" id="rwdClose">Fechar</button><button id="rwdGo">Ver coleção</button></div></dialog>
@@ -116,7 +116,7 @@ const $ = id => document.getElementById(id);
 let COLS_FULL = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
 let COLS_MIN = "id,username,bio,avatar_url,created_at,accent,status";
 let COLS = COLS_FULL;
-let GCOLS_FULL = "id,name,description,owner_id,created_at,is_private,tag,tag_expires,icon,tag_color";
+let GCOLS_FULL = "id,name,description,owner_id,created_at,is_private,tag,tag_expires,icon,tag_color,tag_emoji";
 let GCOLS_MIN = "id,name,description,owner_id,created_at,is_private";
 let GCOLS = GCOLS_FULL;
 const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], founder:["FUNDADOR","#ff9f43"]};
@@ -169,12 +169,20 @@ function nameEl(p, full, override){
   const rl=(tags[p.id]||[]).filter(t=>TAGS[t]); (full?rl:rl.slice(0,1)).forEach(t=>{const x=el("span",TAGS[t][0],"tag"); x.style.color=TAGS[t][1]; w.append(x);});
   return w;
 }
-function getGroupTagOverride(groupId){
+function getGroupTagOverride(groupId, userId){
   try{
     const gg = groups.find(x=> String(x.id)===String(groupId)) || (ctx.type==="group" && ctx.g ? ctx.g : null);
-    if(gg && gg.tag && gg.tag !== "?" && gg.tag_expires && new Date(gg.tag_expires) > Date.now()){
-      return {tag: gg.tag, color: gg.tag_color||null, emoji: gg.tag_emoji||null};
+    if(!gg || !gg.tag || gg.tag === "?" || !gg.tag_expires || new Date(gg.tag_expires) <= Date.now()) return null;
+    // se a pessoa escolheu ficar sem tag, não mostra
+    if(userId && String(userId)===String(me.id) && !myProf.worn_group) return null;
+    if(userId && String(userId)!==String(me.id)){
+      const theirTag=gtags[userId];
+      if(!theirTag || theirTag!==gg.tag) return null;
     }
+    if(userId && String(userId)===String(me.id)){
+      if(String(myProf.worn_group)!==String(gg.id)) return null;
+    }
+    return {tag: gg.tag, color: gg.tag_color||null, emoji: gg.tag_emoji||null};
   }catch{}
   return null;
 }
@@ -247,7 +255,7 @@ async function addMsg(m, table){
   // tag por grupo tipo Discord: dentro do grupo mostra a tag daquele grupo
   let tagOverride=null;
   if(table==="group_messages"){
-    tagOverride = getGroupTagOverride(m.group_id, m.sender_id||m.user_id);
+    tagOverride = getGroupTagOverride(m.group_id, m.user_id||m.sender_id);
   }
   const nm=nameEl(p, false, tagOverride), av=avatar(p); nm.onclick=av.onclick=()=>showProfile(p); nm.style.cursor=av.style.cursor="pointer";
   h.append(nm, el("small", new Date(m.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})));
@@ -437,16 +445,14 @@ let editing=null;
 function openGroupDlg(g){
   editing=g; $("gerr").textContent=""; $("gtitle").textContent=g?"Editar grupo":"Criar grupo"; $("gok").textContent=g?"Salvar":"Criar";
   $("gname").value=g?g.name:""; $("gdesc").value=g?g.description:""; $("gpriv").checked=g?g.is_private:false;
-  $("gicon").value=g&&g.icon?g.icon:""; $("gtagc").value=g&&/^#[0-9a-f]{6}$/i.test(g.tag_color||"")?g.tag_color:"#8b73ff";
-  $("gtagw").classList.toggle("hide",!(g&&g.owner_id===me.id)); $("gtag").value=g&&g.tag?g.tag:"";
+  $("gicon").value=g&&g.icon?g.icon:"";
+  const gc=$("gtagc"); if(gc) gc.value=g&&/^#[0-9a-f]{6}$/i.test(g.tag_color||"")?g.tag_color:"#8b73ff";
+  const gw=$("gtagw"); if(gw) gw.classList.toggle("hide",!(g&&g.owner_id===me.id));
+  const gt=$("gtag"); if(gt) gt.value=g&&g.tag?g.tag:"";
+  const ge=$("gtagemoji"); if(ge) ge.value=g&&g.tag_emoji?g.tag_emoji:"";
   const left=g&&g.tag_expires?Math.ceil((new Date(g.tag_expires)-Date.now())/864e5):0;
-  $("gtaginfo").textContent=left>0?`Tag ativa por mais ${left} ${left===1?"dia":"dias"}.`:"Teste grátis de 2 dias (uma vez por conta).";
-  $("rmtag").onclick=async()=>{
-    if(!confirm("Remover a tag do grupo? O grupo fica sem [TAG] na frente do nick.")) return;
-    const r = await sb.from("groups").update({tag:null, tag_expires:null, tag_color:null, tag_emoji:null}).eq("id", editing.id);
-    if(r.error) return $("gerr").textContent = "Erro ao remover: "+r.error.message;
-    $("gtag").value=""; $("gtagemoji").value=""; $("gerr").textContent=""; toast("Tag do grupo removida. Grupo sem tag agora.");
-  };
+  const gi=$("gtaginfo"); if(gi) gi.textContent=left>0?`Tag ativa por mais ${left} ${left===1?"dia":"dias"}.`:"Deixe vazio pra grupo sem tag.";
+  const rm=$("rmtag"); if(rm){ rm.onclick=async()=>{ if(!editing||!editing.id) return; if(!confirm("Remover a tag deste grupo?")) return; const r=await sb.from("groups").update({tag:null,tag_expires:null,tag_color:null,tag_emoji:null}).eq("id",editing.id); if(r.error) return $("gerr").textContent="Erro: "+r.error.message; const gti=$("gtag"); if(gti) gti.value=""; const gte=$("gtagemoji"); if(gte) gte.value=""; toast("Tag do grupo removida."); }; }
   $("gdlg").showModal();
 }
 $("newg").onclick=()=>openGroupDlg(null);
@@ -631,10 +637,47 @@ function drawProfile(){
   accentSel=myProf.accent||null; drawSwatches(); fxSel=myProf.effect||null; drawFx(); emblemsSel=[...(myProf.emblems||[])]; drawEmblems();
   themeSel=myProf.theme||null; drawTheme(); bannerFile=null; bannerRemove=false; $("bfile").value=""; drawBannerPrev(); drawLinks();
   const w=$("wear"); w.innerHTML=""; w.append(new Option("Nenhuma",""));
-  tagGroups.filter(g=>g.tag&&g.tag!=="?"&&new Date(g.tag_expires)>Date.now()).forEach(g=>w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
-  w.value=myProf.worn_group||""; const none=w.options.length<2; w.disabled=none;
+  // junta tagGroups + grupo atual vestido (mesmo se tagGroups não retornou ele)
+  let all=[...tagGroups];
+  if(myProf.worn_group){
+    const already=all.find(g=> String(g.id)===String(myProf.worn_group));
+    if(!already){
+      const gg=groups.find(g=> String(g.id)===String(myProf.worn_group));
+      if(gg) all.push(gg);
+    }
+  }
+  all.filter(g=>g.tag&&g.tag!=="?"&&( !g.tag_expires || new Date(g.tag_expires)>Date.now() )).forEach(g=>w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
+  w.value=myProf.worn_group?String(myProf.worn_group):""; 
+  const none=w.options.length<2; w.disabled=none;
   $("wearh").textContent=none?"Nenhum dos seus grupos tem tag ativa. O dono define a tag em Editar grupo.":"A tag aparece na frente do seu nome.";
 }
+// botão X que realmente remove tag do perfil - força remoção mesmo se cache estiver dessincronizado
+(function setupRmWear(){
+  const btn=document.getElementById("rmWear");
+  if(!btn) return;
+  btn.onclick=async()=>{
+    btn.disabled=true; const old=btn.textContent; btn.textContent="...";
+    try{
+      // força remoção direto, não depende do myProf cache
+      let r=await sb.rpc("wear_group_tag",{gid:null});
+      if(r.error){
+        r=await sb.from("profiles").update({worn_group:null}).eq("id",me.id);
+      }
+      if(r.error) throw r.error;
+      myProf.worn_group=null;
+      const sel=document.getElementById("wear"); if(sel) sel.value="";
+      gtags[me.id]=undefined; gcol[me.id]=undefined; gemoji[me.id]=undefined;
+      await loadTags();
+      drawMe();
+      drawProfile();
+      toast("Tag removida! Nick limpo.");
+    }catch(e){
+      $("perr").textContent="Erro ao remover: "+(e.message||e);
+    }finally{
+      btn.disabled=false; btn.textContent="✕";
+    }
+  };
+})();
 $("pick").onclick=()=>$("file").click(); $("pav").onclick=()=>$("file").click();
 $("pav").onkeydown=e=>{ if(e.key==="Enter"||e.key===" ") $("file").click(); };
 $("file").onchange=()=>{ const f=$("file").files[0]; if(f){ $("perr").className="err ok"; $("perr").textContent="Foto escolhida: "+f.name+". Clique em Salvar perfil."; } };
