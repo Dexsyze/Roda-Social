@@ -68,17 +68,12 @@ label{display:block;font-weight:600;margin:14px 0 4px}
 .rx{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 .rx button{padding:1px 8px;font-size:.8rem;background:var(--side);border:1px solid var(--line);border-radius:999px;color:var(--ink)}
 .rx button.on{border-color:var(--brand)}
-.act2{margin-left:8px;opacity:.55}@media (hover:hover){.act2{opacity:0}.msg:hover .act2,.msg:focus-within .act2{opacity:1}}
-details.sec>summary{cursor:pointer;font-weight:800}details.sec>summary::marker{color:var(--muted)}.act2 button{background:none;padding:0 3px;font-size:.85rem;color:var(--ink)}.msg:hover .act2{opacity:1}
+.act2{margin-left:8px;opacity:.55}.act2 button{background:none;padding:0 3px;font-size:.85rem;color:var(--ink)}.msg:hover .act2{opacity:1}
 .quote{border-left:3px solid var(--brand);padding:1px 8px;margin:3px 0;color:var(--muted);font-size:.85rem}
 .msg img.m{max-width:min(320px,100%);border-radius:10px;display:block;margin-top:4px}.msg audio{max-width:100%;margin-top:4px}
 #rbar{display:flex;gap:8px;align-items:center;padding:6px 16px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
 #rbar button{background:none;color:var(--ink);padding:0 6px}
 .gtg{color:#8b73ff;font-weight:800;font-size:.78rem;margin-right:5px}
-.vip{margin:0 0 14px;padding:18px;border-radius:16px;border:1px solid #3a2a8f;background:linear-gradient(160deg,#1b1450,var(--panel) 70%);max-width:780px}
-.vip h3{margin:0;font-size:1.2rem}.vip .pr{color:#b48cff;font-weight:800;margin:2px 0 12px}
-.vip ul{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}.vip li b{display:block}.vip li span{color:var(--muted);font-size:.88rem}
-.vip li::before{content:"✓ ";color:var(--ok);font-weight:800}
 .sec{margin:20px 0 0;padding-top:4px;border-top:1px solid var(--line);font-weight:800}
 #swatches,#tswatches{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sw{width:30px;height:30px;border-radius:50%;padding:0;border:2px solid var(--line)}
@@ -198,11 +193,11 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
         <div id="tswatches"></div>
         <label for="tcolor">Tema livre</label><input type="color" id="tcolor" value="#3a2a8f">
         <p class="hint" id="bhint2"></p>
-        <details class="sec"><summary id="lsum">Redes sociais</summary>
+        <div class="sec">Redes sociais</div>
         <div id="lnklist"></div>
-        <p class="hint" id="lnkhint"></p></details>
+        <p class="hint" id="lnkhint"></p>
         <div class="sec">Tag de grupo</div>
-        <select id="wear"></select><p class="hint" id="wearh"></p>
+        <select id="wear"></select><p class="hint">A tag aparece na frente do seu nome. Só vale se o grupo estiver com a tag ativa.</p>
         <p class="err" id="perr" role="alert"></p>
         <div class="row"><button id="psave">Salvar perfil</button><button id="out" class="ghost">Sair da conta</button></div>
       </div>
@@ -269,11 +264,12 @@ const SUPABASE_KEY = "sb_publishable_UA0xjaueCE3NKpn4Nr_B_A_ES_RvK-w";
 })();
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-let COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
-let GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
-const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], founder:["FUNDADOR","#ff9f43"]};
-const PREM = ["admin","founder","vip"], ORDER = ["admin","founder","mod","vip"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
+const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
+const GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
+const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"], founder:["FUNDADOR","#ff9f43"]};
+const PREM = ["admin","founder","donor","vip"], ORDER = ["admin","founder","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
 let me, myProf, signup = false, started = false, ctx = {type:"global"}, tok = 0, accentSel = null, myBirth = null;
+let tagGroups = [];
 let gtags = {}, replyTo = null, rxMap = {}, rec = null;
 let groups = [], myGroups = new Set(), users = [], fr = {}, tags = {};
 const cache = {}, seen = new Set();
@@ -299,7 +295,7 @@ function nameEl(p){
   if(/^#[0-9a-f]{6}$/i.test(p.accent || "")) s.style.color = p.accent;
   if(p.effect === "gradient" || p.effect === "glow") s.classList.add("fx-" + p.effect);
   w.append(s);
-  (tags[p.id] || []).filter(t => TAGS[t]).forEach(t => { const x = el("span", TAGS[t][0], "tag"); x.style.color = TAGS[t][1]; w.append(x); });
+  (tags[p.id] || []).forEach(t => { const x = el("span", TAGS[t][0], "tag"); x.style.color = TAGS[t][1]; w.append(x); });
   return w;
 }
 function clickName(p){ const n = nameEl(p); n.style.cursor = "pointer"; n.onclick = () => showProfile(p); return n; }
@@ -343,9 +339,6 @@ sb.auth.onAuthStateChange((_e, s) => { if(s){me = s.user; start()} else if(start
 async function start(){
   if(started) return; started = true;
   $("auth").classList.add("hide"); $("app").classList.remove("hide");
-  // se o SQL novo ainda não foi rodado, o site continua funcionando sem os recursos novos
-  if((await sb.from("profiles").select("worn_group").limit(1)).error) COLS = COLS.replace(",worn_group", "");
-  if((await sb.from("groups").select("tag,tag_expires").limit(1)).error) GCOLS = GCOLS.replace(",tag,tag_expires", "");
   myProf = await getProf(me.id); await loadTags(); drawMe();
   await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly(), loadItems()]);
   const inv = new URLSearchParams(location.search).get("convite");
@@ -409,18 +402,11 @@ function pickRx(table, id, anchor){
 }
 function setReply(name, text){ replyTo = name + ": " + (text || "").slice(0, 80); $("rtxt").textContent = "Respondendo a " + replyTo; $("rbar").classList.remove("hide"); $("inp").focus(); }
 $("rx_x").onclick = () => { replyTo = null; $("rbar").classList.add("hide"); };
-function vipCard(){
-  const d = el("div", "", "vip"), ul = el("ul"), how = el("p", VIP_HOW, "hint"); how.classList.add("hide");
-  d.append(el("h3", "Seja " + PLUS), el("div", VIP_PRICE, "pr"));
-  VIP_PERKS.forEach(([t, x]) => { const li = el("li"); li.append(el("b", t), el("span", x)); ul.append(li); });
-  const b = el("button", "Quero ser VIP"); b.type = "button"; b.onclick = () => how.classList.toggle("hide");
-  d.append(ul, b, how); return d;
-}
 async function openCtx(c, title, sub, btn){
   const t = ++tok; ctx = c; seen.clear(); rxMap = {}; replyTo = null; $("rbar").classList.add("hide");
   const mediaOk = c.type === "dm" || c.type === "group"; $("attach").classList.toggle("hide", !mediaOk); $("mic").classList.toggle("hide", !mediaOk || !window.MediaRecorder); show("chat"); mark(btn); closeSide();
   $("title").replaceChildren(title instanceof Node ? title : document.createTextNode(title));
-  $("sub").textContent = sub || ""; $("feed").innerHTML = ""; if(c.type === "news") $("feed").append(vipCard());
+  $("sub").textContent = sub || ""; $("feed").innerHTML = "";
   const isG = c.type === "group", member = !isG || myGroups.has(c.id), priv = isG && c.g.is_private;
   $("form").classList.toggle("hide", !member || c.type === "news");
   $("join").classList.toggle("hide", member);
@@ -458,8 +444,7 @@ $("form").onsubmit = async e => {
   if(r.error) $("inp").value = content; else { replyTo = null; $("rbar").classList.add("hide"); }
 };
 function sendMsg(x){
-  x = Object.fromEntries(Object.entries(x).filter(([, v]) => v !== null && v !== undefined));
-  if(ctx.type === "global") return sb.from("messages").insert({user_id: me.id, ...x});
+  if(ctx.type === "global") return sb.from("messages").insert({user_id: me.id, content: x.content, reply_text: x.reply_text || null});
   if(ctx.type === "group") return sb.from("group_messages").insert({group_id: ctx.id, user_id: me.id, ...x});
   return sb.from("dms").insert({sender_id: me.id, receiver_id: ctx.id, ...x});
 }
@@ -536,7 +521,7 @@ async function loadGroups(){
     sb.from("group_members").select("group_id").eq("user_id", me.id)]);
   groups = g.data || []; myGroups = new Set((m.data || []).map(x => x.group_id)); drawGroups();
 }
-function openGroup(g, btn){ openCtx({type:"group", id: g.id, g}, g.name, (g.tag && new Date(g.tag_expires) > Date.now() ? "[" + g.tag + "] " : "") + (g.description || "") + (g.is_private ? (g.description ? " · " : "") + "grupo privado" : ""), btn); }
+function openGroup(g, btn){ openCtx({type:"group", id: g.id, g}, g.name, (g.description || "") + (g.is_private ? (g.description ? " · " : "") + "grupo privado" : ""), btn); }
 function drawGroups(){
   const box = $("glist"); box.innerHTML = "";
   if(!groups.length) box.append(el("div", "Nenhum grupo ainda. Crie o primeiro!", "hint"));
@@ -573,11 +558,10 @@ $("gok").onclick = async () => {
     const nt = $("gtag").value.trim().toUpperCase();
     if(nt && nt !== (editing.tag || "")){
       const t = await sb.rpc("set_group_tag", {gid: editing.id, new_tag: nt});
-      if(t.error){ const m = t.error.message; return $("gerr").textContent = m.includes("tag_invalida") ? "A tag precisa ter 2 a 4 letras ou números." : m.includes("tag_em_uso") ? "Essa tag já está em uso." : m.includes("tag_limite") ? "Você já tem outro grupo com tag ativa." : m.includes("tag_paga") ? "Seu teste grátis já foi usado. A tag paga ainda não está disponível." : "Não foi possível definir a tag: " + m; }
+      if(t.error){ const m = t.error.message; return $("gerr").textContent = m.includes("tag_invalida") ? "A tag precisa ter 2 a 4 letras ou números." : m.includes("tag_em_uso") ? "Essa tag já está em uso." : m.includes("tag_limite") ? "Você já tem outro grupo com tag ativa." : m.includes("tag_paga") ? "Seu teste grátis já foi usado. A tag paga ainda não está disponível." : "Não foi possível definir a tag."; }
+      await loadTags();
     }
-    const {data: fresh} = await sb.from("groups").select(GCOLS).eq("id", editing.id).single();
-    if(nt && (!fresh || fresh.tag !== nt)) return $("gerr").textContent = "A tag não foi salva no banco. Provavelmente o SQL novo (chat-extras) não foi aplicado no Supabase.";
-    await loadTags(); $("gdlg").close(); await loadGroups(); if(nt && nt !== (editing.tag || "")) toast("Tag " + nt + " salva."); return openGroup(fresh || data);
+    $("gdlg").close(); await loadGroups(); return openGroup(data);
   }
   const {data, error} = await sb.from("groups").insert({name, description: $("gdesc").value.trim(), owner_id: me.id, is_private: $("gpriv").checked}).select(GCOLS).single();
   if(error) return $("gerr").textContent = "Não foi possível criar o grupo.";
@@ -697,10 +681,7 @@ async function showProfile(p){
 $("pcx").onclick = () => $("pdlg").close();
 const FX = [[null, "Nenhum", 0], ["ring", "Anel animado", 1], ["gradient", "Nome em degradê", 3], ["glow", "Brilho no nome", 5], ["aurora", "Perfil aurora", 10]];
 let fxSel = null, myInv = 0, themeSel = null, bannerFile = null, bannerRemove = false;
-const THEMES = ["#3a2a8f", "#0f5c4a", "#1b3f8a", "#7a1d1d"], PLUS = "Roda VIP";
-// ====== EDITE AQUI: preço e como assinar o VIP ======
-const VIP_PRICE = "R$ 9,90 por mês", VIP_HOW = "Para assinar, faça o Pix para a chave SUA_CHAVE_PIX e envie o comprovante para @seu_contato. Seu VIP é liberado em até 24 horas.";
-const VIP_PERKS = [["Nome com qualquer cor", "Escolha a cor que quiser, não só as 4 padrão."], ["Todos os efeitos animados", "Anel, degradê, brilho e perfil aurora liberados."], ["Banner em GIF e tema livre", "Seu perfil em movimento e com a sua cor."], ["Todas as redes no perfil", "Até 7 redes, em vez de 3."], ["Tag VIP no nome", "Todo mundo vê que você apoia a Roda."], ["Apoia o projeto", "Ajuda a Roda a continuar crescendo."]];
+const THEMES = ["#3a2a8f", "#0f5c4a", "#1b3f8a", "#7a1d1d"], PLUS = "Roda Plus"; // troque PLUS pelo nome que você escolher
 function drawFx(){
   const prem = isPrem(me.id), box = $("fxlist"); box.innerHTML = "";
   FX.forEach(([id, label, inv]) => {
@@ -759,7 +740,6 @@ async function drawLinks(){
     i.id = "ln_" + id; i.maxLength = 120; i.placeholder = "seu usuário"; i.value = myLinks[id] || ""; i.setAttribute("aria-label", name);
     r.append(el("span", name), i); box.append(r);
   });
-  const n = Object.keys(myLinks).length; $("lsum").textContent = "Redes sociais" + (n ? ` (${n})` : "");
   $("lnkhint").textContent = isPrem(me.id) ? `Como membro do ${PLUS}, você pode usar todas as redes.` : `Você pode mostrar até ${FREE_LINKS} redes. Membros do ${PLUS} podem mostrar todas.`;
 }
 async function saveLinks(){ // devolve uma mensagem de erro, ou null se deu certo
@@ -782,7 +762,7 @@ async function saveLinks(){ // devolve uma mensagem de erro, ou null se deu cert
 // ---------- perfil ----------
 $("meBtn").onclick = async () => {
   show("profile"); mark(null); closeSide(); $("perr").textContent = "";
-  const [b, i] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id}), loadItems(), loadGroups()]); myBirth = b.data; myInv = i.data || 0; drawProfile();
+  const [b, i, tg] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id}), sb.rpc("my_tag_groups"), loadItems(), loadGroups()]); myBirth = b.data; myInv = i.data || 0; tagGroups = tg.data || []; drawProfile();
 };
 function drawSwatches(){
   const box = $("swatches"); box.innerHTML = "";
@@ -792,7 +772,7 @@ function drawSwatches(){
   });
   const prem = isPrem(me.id); $("pcolor").disabled = !prem;
   if(accentSel) $("pcolor").value = accentSel;
-  $("chint").textContent = prem ? "Como VIP, você pode usar qualquer cor." : "Cor livre é exclusiva para VIPs.";
+  $("chint").textContent = prem ? "Como doador, você pode usar qualquer cor." : "Cor livre é exclusiva para doadores e VIPs.";
   const pv = $("phead").querySelector("strong"); if(pv) pv.style.color = accentSel || "";
 }
 $("pcolor").oninput = e => { accentSel = e.target.value; drawSwatches(); };
@@ -812,9 +792,8 @@ function drawProfile(){
   themeSel = myProf.theme || null; drawTheme(); bannerFile = null; bannerRemove = false; $("bfile").value = ""; drawBannerPrev();
   drawLinks();
   const w = $("wear"); w.innerHTML = ""; w.append(new Option("Nenhuma", ""));
-  groups.filter(g => g.tag && new Date(g.tag_expires) > Date.now() && myGroups.has(g.id)).forEach(g => w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
-  w.value = myProf.worn_group || ""; const none = w.options.length < 2; w.disabled = none;
-  $("wearh").textContent = none ? "Nenhum dos seus grupos tem tag ativa. O dono do grupo define a tag em Editar grupo." : "A tag aparece na frente do seu nome.";
+  tagGroups.filter(g => g.tag && new Date(g.tag_expires) > Date.now()).forEach(g => w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
+  w.value = myProf.worn_group || "";
 }
 $("pick").onclick = () => $("file").click();
 $("pav").onclick = () => $("file").click();
@@ -862,7 +841,7 @@ $("psave").onclick = async () => {
       m.includes("birthdate_locked") ? "A data de nascimento não pode ser alterada." :
       m.includes("emblem_bloqueado") ? "Você ainda não tem um desses emblemas." :
       m.includes("effect_locked") ? "Esse efeito ainda está bloqueado. Convide mais amigos para liberar." :
-      m.includes("premium_only") ? "Cor livre é exclusiva para VIPs." :
+      m.includes("premium_only") ? "Cor livre é exclusiva para doadores e VIPs." :
       error.code === "23505" ? "Esse nome de usuário já está em uso." : "Não foi possível salvar.";
   }
   if(($("wear").value || "") !== String(myProf.worn_group || "")){ const w = await sb.rpc("wear_group_tag", {gid: $("wear").value || null}); if(w.error) return perr.textContent = "Essa tag não está disponível."; await loadTags(); }
