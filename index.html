@@ -153,13 +153,15 @@ function avatar(p){
 }
 function nameEl(p, full, override){
   const w=el("span","", "nm"), s=el("strong", p.username||"?");
-  let otag=null, ocol=null;
-  if(override && override.tag){ otag=override.tag; ocol=override.color; }
-  else if(gtags[p.id] && gtags[p.id] !== "?" && gtags[p.id].length >= 2){ otag=gtags[p.id]; ocol=gcol[p.id]; }
+  let otag=null, ocol=null, oemoji=null;
+  if(override && override.tag){ otag=override.tag; ocol=override.color; oemoji=override.emoji||null; }
+  else if(gtags[p.id] && gtags[p.id] !== "?" && gtags[p.id].length >= 2){ otag=gtags[p.id]; ocol=gcol[p.id]; oemoji=gemoji[p.id]||null; }
   if(otag && otag !== "?" && otag.length >= 2){
-    const g=el("span", otag, "gtg");
+    const g=el("span", (oemoji?oemoji+" ":"")+otag, "gtg");
     if(/^#[0-9a-f]{6}$/i.test(ocol||"")) g.style.color=ocol;
     w.append(g);
+  } else if(oemoji){
+    const g=el("span", oemoji, "gtg"); w.append(g);
   }
   if(/^#[0-9a-f]{6}$/i.test(p.accent||"")) s.style.color=p.accent;
   if(p.effect==="gradient"||p.effect==="glow") s.classList.add("fx-"+p.effect);
@@ -171,7 +173,7 @@ function getGroupTagOverride(groupId){
   try{
     const gg = groups.find(x=> String(x.id)===String(groupId)) || (ctx.type==="group" && ctx.g ? ctx.g : null);
     if(gg && gg.tag && gg.tag !== "?" && gg.tag_expires && new Date(gg.tag_expires) > Date.now()){
-      return {tag: gg.tag, color: gg.tag_color||null};
+      return {tag: gg.tag, color: gg.tag_color||null, emoji: gg.tag_emoji||null};
     }
   }catch{}
   return null;
@@ -186,9 +188,9 @@ async function loadTags(){
   }catch(e){ console.warn("user_tags falhou", e.message); tags={} }
   try{
     let wt=await sb.rpc("worn_tags2"); if(wt.error) wt=await sb.rpc("worn_tags");
-    gtags={}; gcol={};
-    (wt.data||[]).forEach(x=>{ if(x.tag && x.tag !== "?" && x.tag.length >=2){ gtags[x.user_id]=x.tag; if(x.color) gcol[x.user_id]=x.color; } });
-  }catch(e){ console.warn("worn_tags falhou", e.message); gtags={}; gcol={}; }
+    gtags={}; gcol={}; gemoji={};
+    (wt.data||[]).forEach(x=>{ if(x.tag && x.tag !== "?" && x.tag.length >=2){ gtags[x.user_id]=x.tag; if(x.color) gcol[x.user_id]=x.color; if(x.emoji) gemoji[x.user_id]=x.emoji; } });
+  }catch(e){ console.warn("worn_tags falhou", e.message); gtags={}; gcol={}; gemoji={}; }
 }
 const hasTag = (...l) => (tags[me.id]||[]).some(t=>l.includes(t));
 const isPrem = id => (tags[id]||[]).some(t=>PREM.includes(t));
@@ -218,6 +220,7 @@ async function start(){
     if((await sb.from("profiles").select("worn_group").limit(1)).error) COLS=COLS.replace(",worn_group","");
     if((await sb.from("groups").select("tag,tag_expires").limit(1)).error) GCOLS=GCOLS.replace(",tag,tag_expires","");
     if((await sb.from("groups").select("icon,tag_color").limit(1)).error) GCOLS=GCOLS.replace(",icon,tag_color","");
+    if((await sb.from("groups").select("tag_emoji").limit(1)).error) GCOLS=GCOLS.replace(",tag_emoji","");
   }catch{}
   try{ myProf=await getProf(me.id); }catch{ myProf={id:me.id, username:"ADMIN"} }
   await loadTags(); drawMe();
@@ -244,7 +247,7 @@ async function addMsg(m, table){
   // tag por grupo tipo Discord: dentro do grupo mostra a tag daquele grupo
   let tagOverride=null;
   if(table==="group_messages"){
-    tagOverride = getGroupTagOverride(m.group_id);
+    tagOverride = getGroupTagOverride(m.group_id, m.sender_id||m.user_id);
   }
   const nm=nameEl(p, false, tagOverride), av=avatar(p); nm.onclick=av.onclick=()=>showProfile(p); nm.style.cursor=av.style.cursor="pointer";
   h.append(nm, el("small", new Date(m.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})));
@@ -438,6 +441,12 @@ function openGroupDlg(g){
   $("gtagw").classList.toggle("hide",!(g&&g.owner_id===me.id)); $("gtag").value=g&&g.tag?g.tag:"";
   const left=g&&g.tag_expires?Math.ceil((new Date(g.tag_expires)-Date.now())/864e5):0;
   $("gtaginfo").textContent=left>0?`Tag ativa por mais ${left} ${left===1?"dia":"dias"}.`:"Teste grátis de 2 dias (uma vez por conta).";
+  $("rmtag").onclick=async()=>{
+    if(!confirm("Remover a tag do grupo? O grupo fica sem [TAG] na frente do nick.")) return;
+    const r = await sb.from("groups").update({tag:null, tag_expires:null, tag_color:null, tag_emoji:null}).eq("id", editing.id);
+    if(r.error) return $("gerr").textContent = "Erro ao remover: "+r.error.message;
+    $("gtag").value=""; $("gtagemoji").value=""; $("gerr").textContent=""; toast("Tag do grupo removida. Grupo sem tag agora.");
+  };
   $("gdlg").showModal();
 }
 $("newg").onclick=()=>openGroupDlg(null);
