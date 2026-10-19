@@ -496,6 +496,7 @@ async function openGroupDlg(g){
     if(gg && gg.tag && gg.tag_expires){
       const diff = new Date(gg.tag_expires) - Date.now();
       const editsLeft = 5 - (gg.tag_edit_count||0);
+      const isAdmin = (tags[me.id]||[]).some(t=>['admin','adm','founder'].includes(t));
       if(diff>0){
         gi.textContent=`Tag [${gg.tag}] ativa por mais ${formatDiff(diff)}. Edições restantes: ${editsLeft}/5. Expira em ${new Date(gg.tag_expires).toLocaleString('pt-BR')}`;
         if(gtInput) gtInput.disabled=false;
@@ -504,10 +505,17 @@ async function openGroupDlg(g){
         $("gok").disabled=false;
       }else{
         gi.textContent=`Tag [${gg.tag}] EXPIRADA há ${formatDiff(diff)}. Grupo continua funcionando normal, mas a tag não aparece mais. Renove VIP para editar/criar nova tag.`;
-        // trava tudo de tag quando expira
-        if(gtInput) gtInput.disabled=true;
-        if(gcInput) gcInput.disabled=true;
-        if(geInput) geInput.disabled=true;
+        // trava pra user normal, mas libera se for admin/dono vip
+        if(isAdmin){
+          gi.textContent+=` (Você é ADMIN, pode editar e renovar no admin)`;
+          if(gtInput) gtInput.disabled=false;
+          if(gcInput) gcInput.disabled=false;
+          if(geInput) geInput.disabled=false;
+        }else{
+          if(gtInput) gtInput.disabled=true;
+          if(gcInput) gcInput.disabled=true;
+          if(geInput) geInput.disabled=true;
+        }
         // se não é admin/vip, não deixa salvar tag, mas deixa salvar nome/desc
         sb.rpc("my_tag_trial_status").then(r=>{
           const s=r.data&&r.data[0];
