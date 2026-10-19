@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="logo.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
 <style>
-:root{color-scheme:dark;--bg:#09090f;--side:#0d0d16;--panel:#13131f;--ink:#ececf8;--muted:#8a8aaa;--brand:#8b73ff;--on:#fff;--line:#23233a;--mine:#211e47;--bad:#ff6b9a;--ok:#4cd9a0}
+:root{color-scheme:dark;--bg:#050508;--side:#08080d;--panel:#0d0d15;--ink:#e8e8f4;--muted:#80809f;--brand:#8b73ff;--on:#fff;--line:#1a1a2b;--mine:#171436;--bad:#ff6b9a;--ok:#4cd9a0}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -62,7 +62,7 @@ form.send{display:flex;gap:8px;padding:12px 16px;background:var(--panel);border-
 .top{display:flex;gap:16px;align-items:center;margin-bottom:6px}
 label{display:block;font-weight:600;margin:14px 0 4px}
 .sec{margin:20px 0 0;padding-top:4px;border-top:1px solid var(--line);font-weight:800}
-#swatches{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#swatches,#tswatches{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sw{width:30px;height:30px;border-radius:50%;padding:0;border:2px solid var(--line)}
 .sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--brand)}
 input[type=color]{width:46px;height:34px;padding:2px}
@@ -76,6 +76,21 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
 @media (max-width:720px){#side{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-100%);transition:transform .2s;width:84%}
 #side.open{transform:none}#menu{display:block}}
 @media (prefers-reduced-motion:reduce){#side{transition:none}}
+@keyframes ringp{0%,100%{box-shadow:0 0 0 2px #8b73ff,0 0 10px 2px rgba(139,115,255,.55)}50%{box-shadow:0 0 0 2px #4cd9a0,0 0 14px 3px rgba(76,217,160,.55)}}
+@keyframes slide{to{background-position:300% 0}}
+@keyframes glowp{0%,100%{text-shadow:0 0 3px currentColor}50%{text-shadow:0 0 12px currentColor,0 0 2px currentColor}}
+.av.fx-ring{animation:ringp 3s ease-in-out infinite}
+.fx-gradient{background:linear-gradient(90deg,#8b73ff,#4cd9a0,#5aa9ff,#ff8a5b,#8b73ff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important;animation:slide 5s linear infinite}
+.fx-glow{animation:glowp 2.4s ease-in-out infinite}
+#pdlg{padding:0;overflow:hidden}
+.ptop{height:120px;background:linear-gradient(120deg,var(--mine),#1b1840);background-size:300% 100%}
+.pcard.fx-aurora .ptop{background-image:linear-gradient(120deg,#2a1d7a,#0f5c4a,#1b3f8a,#2a1d7a);animation:slide 8s linear infinite}
+.pbody{padding:0 20px 20px}
+#pcav{margin-top:-44px;margin-bottom:8px}#pcav .av{width:80px;height:80px;font-size:1.8rem;border:4px solid var(--panel)}
+#pcname{margin:0 0 4px;font-size:1.3rem}
+#fxlist{display:flex;flex-wrap:wrap;gap:8px}.fxb[aria-pressed="true"]{border-color:var(--brand);background:var(--mine)}
+@media (prefers-reduced-motion:reduce){.av.fx-ring,.fx-gradient,.fx-glow,.pcard.fx-aurora .ptop{animation:none}}
+.bprev{height:96px;border-radius:12px;border:1px solid var(--line);background:var(--side) center/cover no-repeat;display:grid;place-items:center;color:var(--muted);font-size:.9rem}
 </style>
 </head>
 <body>
@@ -84,6 +99,7 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
   <img class="logo" src="logo.png" alt="" style="width:56px;height:56px;border-radius:14px;margin-bottom:10px" onerror="this.remove()">
   <h1>Roda</h1>
   <p>Converse com gente do mundo todo.</p>
+  <p class="hint hide" id="refnote">Você foi convidado para a Roda! Crie sua conta abaixo.</p>
   <input id="username" class="hide" placeholder="Nome de usuário (3 a 20 letras, números ou _)" maxlength="20" autocomplete="username">
   <input id="email" type="email" placeholder="E-mail" autocomplete="email">
   <input id="pass" type="password" placeholder="Senha (mín. 6 caracteres)" autocomplete="current-password">
@@ -96,13 +112,15 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
   <aside id="side">
     <div class="brand"><img class="logo" src="logo.png" alt="" onerror="this.remove()">Roda</div>
     <button class="nav" id="nGlobal"># Chat global</button>
+    <button class="nav" id="nNews">📢 Anúncios</button>
     <div class="sh">Amigos</div><div class="col" id="flist"></div>
     <div class="sh">Grupos <span><button class="mini ghost" id="joing" aria-label="Entrar com convite" title="Entrar com convite">↗</button> <button class="mini ghost" id="newg" aria-label="Criar grupo" title="Criar grupo">+</button></span></div>
     <div class="col" id="glist"></div>
     <div class="sh">Pessoas</div>
     <input id="search" placeholder="Buscar pessoas" aria-label="Buscar pessoas">
     <div class="col" id="ulist"></div>
-    <button class="nav" id="inviteSite" style="margin-top:auto">Convidar amigos para a Roda</button>
+    <button class="nav" id="weekly" style="margin-top:auto">🎁 Recompensa da semana</button>
+    <button class="nav" id="inviteSite">Convidar amigos (ganhe efeitos)</button>
     <button class="card" id="meBtn" style="margin-top:6px" aria-label="Editar meu perfil"></button>
   </aside>
 
@@ -139,6 +157,17 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
         <div id="swatches"></div>
         <label for="pcolor">Cor livre</label><input type="color" id="pcolor" value="#8b73ff">
         <p class="hint" id="chint"></p>
+        <label>Efeito animado</label>
+        <div id="fxlist"></div>
+        <p class="hint" id="fxhint"></p>
+        <label>Banner do perfil</label>
+        <div class="bprev" id="bprev"></div>
+        <input type="file" id="bfile" accept="image/png,image/jpeg,image/webp,image/gif" class="hide">
+        <div class="row" style="margin-top:8px"><button type="button" class="ghost" id="bpick">Escolher banner</button><button type="button" class="ghost" id="brem">Remover banner</button></div>
+        <label>Tema do perfil</label>
+        <div id="tswatches"></div>
+        <label for="tcolor">Tema livre</label><input type="color" id="tcolor" value="#3a2a8f">
+        <p class="hint" id="bhint2"></p>
         <p class="err" id="perr" role="alert"></p>
         <div class="row"><button id="psave">Salvar perfil</button><button id="out" class="ghost">Sair da conta</button></div>
       </div>
@@ -162,22 +191,43 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
   <div class="row"><button class="ghost" id="jcancel">Cancelar</button><button id="jok">Entrar</button></div>
 </dialog>
 
+<dialog id="pdlg">
+  <div class="pcard" id="pcard">
+    <div class="ptop" id="pctop"></div>
+    <div class="pbody">
+      <div id="pcav"></div>
+      <h2 id="pcname"></h2>
+      <div class="hint" id="pcmeta"></div>
+      <p id="pcbio" style="overflow-wrap:anywhere"></p>
+      <div class="hint" id="pcinv"></div>
+      <div class="row"><button id="pcdm"></button><button class="ghost" id="pcfr">Adicionar amigo</button><button class="ghost" id="pcx">Fechar</button></div>
+    </div>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-// Cole a chave ANON (pública) do Supabase aqui. Nunca use a service_role.
+// Cole aqui a chave PUBLICÁVEL do Supabase (começa com sb_publishable_). NUNCA a secret nem a service_role.
 const SUPABASE_URL = "https://pqmyrtywtgukcdmkzuax.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbXlydHl3dGd1a2NkbWt6dWF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjM2MTAxNywiZXhwIjoyMTA3OTM3MDE3fQ.M6XJ8hstRY-etmkdpdGZjgd2MMIN36Wy5jEWgL1Up0A";
+const SUPABASE_KEY = "sb_publishable_UA0xjaueCE3NKpn4Nr_B_A_ES_RvK-w";
 
+(function guard(){ // trava: se uma chave secreta for colada por engano, o site recusa rodar
+  let bad = SUPABASE_KEY.startsWith("sb_secret_");
+  try{ if(SUPABASE_KEY.startsWith("eyJ")) bad = JSON.parse(atob(SUPABASE_KEY.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).role === "service_role"; }catch{}
+  if(bad){ document.body.innerHTML = "<p style='padding:24px;font-family:sans-serif'>Chave secreta detectada no código. Troque pela chave publicável do Supabase.</p>"; throw new Error("chave secreta no código"); }
+})();
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status";
+const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme";
 const GCOLS = "id,name,description,owner_id,created_at,is_private";
-const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"]};
-const ORDER = ["admin","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
+const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"], founder:["FUNDADOR","#ff9f43"]};
+const PREM = ["admin","founder","donor","vip"], ORDER = ["admin","founder","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
 let me, myProf, signup = false, started = false, ctx = {type:"global"}, tok = 0, accentSel = null, myBirth = null;
 let groups = [], myGroups = new Set(), users = [], fr = {}, tags = {};
 const cache = {}, seen = new Set();
+let REF = "";
+try{ REF = (new URLSearchParams(location.search).get("ref") || localStorage.getItem("roda_ref") || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12); if(REF) localStorage.setItem("roda_ref", REF); }catch{}
 
 const el = (tag, text, cls) => Object.assign(document.createElement(tag), {textContent: text || "", className: cls || ""});
 const toast = t => { const d = $("toast"); d.textContent = t; d.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => d.classList.remove("on"), 2800); };
@@ -187,7 +237,7 @@ async function getProf(id){
   return cache[id] = data || {id, username:"?"};
 }
 function avatar(p){
-  const d = el("div", "", "av");
+  const d = el("div", "", "av" + (p.effect === "ring" ? " fx-ring" : ""));
   if(p.avatar_url){const i = document.createElement("img"); i.src = p.avatar_url; i.alt = ""; d.append(i)}
   else d.textContent = (p.username || "?")[0].toUpperCase();
   return d;
@@ -195,16 +245,19 @@ function avatar(p){
 function nameEl(p){
   const w = el("span", "", "nm"), s = el("strong", p.username);
   if(/^#[0-9a-f]{6}$/i.test(p.accent || "")) s.style.color = p.accent;
+  if(p.effect === "gradient" || p.effect === "glow") s.classList.add("fx-" + p.effect);
   w.append(s);
   (tags[p.id] || []).forEach(t => { const x = el("span", TAGS[t][0], "tag"); x.style.color = TAGS[t][1]; w.append(x); });
   return w;
 }
+function clickName(p){ const n = nameEl(p); n.style.cursor = "pointer"; n.onclick = () => showProfile(p); return n; }
 async function loadTags(){
   const {data} = await sb.from("user_tags").select("*"); tags = {};
   (data || []).forEach(t => (tags[t.user_id] ||= []).push(t.tag));
   for(const k in tags) tags[k].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
 }
 const hasTag = (...l) => (tags[me.id] || []).some(t => l.includes(t));
+const isPrem = id => (tags[id] || []).some(t => PREM.includes(t));
 const closeSide = () => $("side").classList.remove("open");
 function show(v){ $("chat").classList.toggle("hide", v !== "chat"); $("profile").classList.toggle("hide", v !== "profile"); }
 function mark(btn){ document.querySelectorAll(".nav").forEach(x => x.removeAttribute("aria-current")); if(btn) btn.setAttribute("aria-current","true"); }
@@ -226,7 +279,7 @@ $("go").onclick = async () => {
   const email = $("email").value.trim(), password = $("pass").value, username = $("username").value.trim();
   $("autherr").textContent = "";
   if(signup && !/^[A-Za-z0-9_]{3,20}$/.test(username)) return $("autherr").textContent = "Use de 3 a 20 letras, números ou _ no nome de usuário.";
-  const r = signup ? await sb.auth.signUp({email, password, options:{data:{username}}})
+  const r = signup ? await sb.auth.signUp({email, password, options:{data:{username, ref: REF}}})
                    : await sb.auth.signInWithPassword({email, password});
   if(r.error) return $("autherr").textContent = signup ? "Não foi possível criar a conta. O nome de usuário ou e-mail pode já estar em uso." : "E-mail ou senha incorretos.";
   if(signup && !r.data.session) $("autherr").textContent = "Conta criada! Confirme seu e-mail e depois entre.";
@@ -238,13 +291,14 @@ async function start(){
   if(started) return; started = true;
   $("auth").classList.add("hide"); $("app").classList.remove("hide");
   myProf = await getProf(me.id); await loadTags(); drawMe();
-  await Promise.all([loadGroups(), loadFriends(), loadUsers("")]);
+  await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly()]);
   const inv = new URLSearchParams(location.search).get("convite");
   if(!(inv && await useInvite(inv.toLowerCase()))) openGlobal();
   const rt = (table, match) => sb.channel(table).on("postgres_changes",{event:"INSERT",schema:"public",table}, e => { if(match(e.new)) addMsg(e.new, table) }).subscribe();
   rt("messages", () => ctx.type === "global");
   rt("group_messages", m => ctx.type === "group" && m.group_id === ctx.id);
   rt("dms", m => ctx.type === "dm" && (m.sender_id === ctx.id || m.receiver_id === ctx.id));
+  rt("announcements", () => ctx.type === "news");
   setInterval(async () => { await loadTags(); await loadFriends(); drawUsers(); }, 30000);
 }
 function drawMe(){
@@ -255,10 +309,17 @@ function drawMe(){
 // ---------- mensagens ----------
 async function addMsg(m, table){
   const key = table + m.id; if(seen.has(key)) return; seen.add(key);
+  if(table === "announcements"){
+    const row = el("div", "", "msg"), b = el("div", "", "b"), h = el("div"), t = el("span", "OFICIAL", "tag"); t.style.color = "#8b73ff";
+    h.append(el("strong", "Roda"), t, el("small", new Date(m.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})));
+    b.append(h, el("p", m.content)); row.append(el("div", "R", "av"), b);
+    const f = $("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop = f.scrollHeight; return;
+  }
   const p = await getProf(m.sender_id || m.user_id);
   const row = el("div", "", "msg" + (p.id === me.id ? " me" : "")), b = el("div", "", "b"), h = el("div");
-  h.append(nameEl(p), el("small", new Date(m.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})));
-  b.append(h, el("p", m.content)); row.append(avatar(p), b);
+  const nm = nameEl(p), av = avatar(p); nm.onclick = av.onclick = () => showProfile(p); nm.style.cursor = av.style.cursor = "pointer";
+  h.append(nm, el("small", new Date(m.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})));
+  b.append(h, el("p", m.content)); row.append(av, b);
   const f = $("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop = f.scrollHeight;
 }
 async function openCtx(c, title, sub, btn){
@@ -266,7 +327,7 @@ async function openCtx(c, title, sub, btn){
   $("title").replaceChildren(title instanceof Node ? title : document.createTextNode(title));
   $("sub").textContent = sub || ""; $("feed").innerHTML = "";
   const isG = c.type === "group", member = !isG || myGroups.has(c.id), priv = isG && c.g.is_private;
-  $("form").classList.toggle("hide", !member);
+  $("form").classList.toggle("hide", !member || c.type === "news");
   $("join").classList.toggle("hide", member);
   const owner = isG && c.g.owner_id === me.id;
   $("leave").classList.toggle("hide", !(isG && member) || owner);
@@ -277,19 +338,21 @@ async function openCtx(c, title, sub, btn){
   if(!member) return $("feed").append(el("div", "Entre no grupo para ver e enviar mensagens.", "empty"));
   let q, table;
   if(c.type === "global"){table = "messages"; q = sb.from(table).select("*")}
+  else if(c.type === "news"){table = "announcements"; q = sb.from(table).select("*")}
   else if(isG){table = "group_messages"; q = sb.from(table).select("*").eq("group_id", c.id)}
   else {table = "dms"; q = sb.from(table).select("*").or(`and(sender_id.eq.${me.id},receiver_id.eq.${c.id}),and(sender_id.eq.${c.id},receiver_id.eq.${me.id})`)}
   const {data} = await q.order("created_at",{ascending:false}).limit(60);
   if(t !== tok) return;
-  if(!data || !data.length) $("feed").append(el("div", "Ainda não tem mensagens. Que tal começar a conversa?", "empty"));
+  if(!data || !data.length) $("feed").append(el("div", c.type === "news" ? "Nenhum anúncio ainda." : "Ainda não tem mensagens. Que tal começar a conversa?", "empty"));
   for(const m of (data || []).reverse()){ if(t !== tok) return; await addMsg(m, table); }
 }
 function openGlobal(){ openCtx({type:"global"}, "# Chat global", "todo mundo conversa aqui", $("nGlobal")); }
 async function openDm(p, btn){
   const {data: age} = await sb.rpc("age_of", {p: p.id});
-  openCtx({type:"dm", id: p.id}, nameEl(p), [age ? age + " anos" : "", p.status || p.bio || ""].filter(Boolean).join(" · "), btn);
+  openCtx({type:"dm", id: p.id}, clickName(p), [age ? age + " anos" : "", p.status || p.bio || ""].filter(Boolean).join(" · "), btn);
 }
 $("nGlobal").onclick = openGlobal;
+$("nNews").onclick = () => openCtx({type:"news"}, "📢 Anúncios", "avisos oficiais da Roda (só leitura)", $("nNews"));
 $("menu").onclick = () => $("side").classList.add("open");
 $("form").onsubmit = async e => {
   e.preventDefault(); const content = $("inp").value.trim(); if(!content) return; $("inp").value = "";
@@ -309,7 +372,7 @@ async function loadUsers(q){
 function drawUsers(){
   const box = $("ulist"); box.innerHTML = "";
   users.forEach(p => {
-    const f = fr[p.id], extra = [];
+    const f = fr[p.id], extra = [act("👤", "Ver perfil", () => showProfile(p))];
     if(!f) extra.push(act("+", "Adicionar aos amigos", () => addFriend(p.id)));
     else if(f.status === "pending") extra.push(el("small", f.incoming ? "pediu" : "enviado", "hint"));
     box.append(navRow(p, b => openDm(p, b), ...extra));
@@ -329,7 +392,7 @@ function drawFriends(){
   inc.forEach(i => box.append(navRow(cache[i], b => openDm(cache[i], b),
     act("✓", "Aceitar pedido", () => friendOp(i, "accept")), act("✗", "Recusar pedido", () => friendOp(i, "remove")))));
   ok.forEach(i => box.append(navRow(cache[i], b => openDm(cache[i], b),
-    act("×", "Desfazer amizade", () => { if(confirm("Desfazer amizade com " + cache[i].username + "?")) friendOp(i, "remove"); }))));
+    act("👤", "Ver perfil", () => showProfile(cache[i])), act("×", "Desfazer amizade", () => { if(confirm("Desfazer amizade com " + cache[i].username + "?")) friendOp(i, "remove"); }))));
 }
 async function addFriend(id){
   const {error} = await sb.from("friendships").insert({requester_id: me.id, addressee_id: id});
@@ -420,15 +483,93 @@ $("jok").onclick = async () => {
 
 // ---------- convidar amigos para o site ----------
 $("inviteSite").onclick = async () => {
-  const url = location.origin + location.pathname, text = "Vem conversar comigo na Roda!";
+  const {data: code} = await sb.rpc("my_ref_code");
+  const url = location.origin + location.pathname + (code ? "?ref=" + code : ""), text = "Vem conversar comigo na Roda!";
   if(navigator.share){ try{ await navigator.share({title:"Roda", text, url}); return; } catch(e){ if(e.name === "AbortError") return; } }
-  try{ await navigator.clipboard.writeText(url); toast("Link do site copiado. É só mandar para seus amigos."); } catch{ prompt("Copie o link do site:", url); }
+  try{ await navigator.clipboard.writeText(url); toast("Seu link de convite foi copiado. Quem criar conta por ele libera efeitos no seu perfil."); } catch{ prompt("Copie o link do site:", url); }
 };
+
+// ---------- recompensa semanal ----------
+let myStreak = 0, weeklyClaimed = false;
+async function loadWeekly(){
+  const {data} = await sb.rpc("weekly_status"), w = (data && data[0]) || {streak: 0, claimed: false};
+  myStreak = w.streak; weeklyClaimed = w.claimed; drawWeekly();
+}
+function drawWeekly(){
+  const b = $("weekly"); b.textContent = weeklyClaimed ? `✓ Semana resgatada · 🔥 ${myStreak}` : "🎁 Resgatar recompensa da semana";
+  b.style.fontWeight = weeklyClaimed ? 500 : 800; b.style.color = weeklyClaimed ? "var(--muted)" : "var(--brand)";
+}
+$("weekly").onclick = async () => {
+  if(weeklyClaimed) return toast("Você já resgatou esta semana. Volte na segunda-feira!");
+  const {data, error} = await sb.rpc("claim_weekly"); if(error) return toast("Não foi possível resgatar agora.");
+  await loadWeekly(); toast(`Recompensa resgatada! 🔥 ${data} ${data === 1 ? "semana seguida" : "semanas seguidas"}.`);
+};
+
+// ---------- cartão de perfil e efeitos ----------
+function safeBanner(p){
+  const u = p.banner_url || "";
+  if(!u.startsWith(SUPABASE_URL + "/storage/v1/object/public/banners/") || /["'()\\\s]/.test(u)) return "";
+  return /\.gif(\?|$)/i.test(u) && !isPrem(p.id) ? "" : u;
+}
+async function showProfile(p){
+  p = cache[p.id] || p;
+  const [a, v, w] = await Promise.all([sb.rpc("age_of", {p: p.id}), sb.rpc("invites_of", {uid: p.id}), sb.rpc("streak_of", {uid: p.id})]);
+  const age = a.data, inv = v.data || 0, wk = w.data || 0, mine = p.id === me.id, bn = safeBanner(p);
+  $("pcard").className = "pcard" + (p.effect === "aurora" ? " fx-aurora" : "");
+  $("pcard").style.background = /^#[0-9a-f]{6}$/i.test(p.theme || "") ? `linear-gradient(180deg, ${p.theme}cc, var(--panel) 78%)` : "";
+  $("pctop").style.backgroundImage = bn ? `url("${bn}")` : ""; $("pctop").style.backgroundSize = bn ? "cover" : ""; $("pctop").style.backgroundPosition = "center";
+  $("pcav").replaceChildren(avatar(p)); $("pcname").replaceChildren(nameEl(p));
+  $("pcmeta").textContent = [age ? age + " anos" : "", "na Roda desde " + new Date(p.created_at).toLocaleDateString("pt-BR",{month:"short", year:"numeric"}), p.status || ""].filter(Boolean).join(" · ");
+  $("pcbio").textContent = p.bio || ""; $("pcbio").classList.toggle("hide", !p.bio);
+  $("pcinv").textContent = [wk ? `🔥 ${wk} ${wk === 1 ? "semana seguida" : "semanas seguidas"}` : "", inv ? `Convidou ${inv} ${inv === 1 ? "pessoa" : "pessoas"}` : ""].filter(Boolean).join(" · ");
+  $("pcdm").textContent = mine ? "Editar meu perfil" : "Enviar mensagem";
+  $("pcdm").onclick = () => { $("pdlg").close(); if(mine) $("meBtn").click(); else openDm(p, null); };
+  $("pcfr").classList.toggle("hide", mine || !!fr[p.id]);
+  $("pcfr").onclick = async () => { await addFriend(p.id); $("pdlg").close(); };
+  $("pdlg").showModal();
+}
+$("pcx").onclick = () => $("pdlg").close();
+const FX = [[null, "Nenhum", 0, 0], ["ring", "Anel animado", 1, 2], ["gradient", "Nome em degradê", 3, 4], ["glow", "Brilho no nome", 5, 8], ["aurora", "Perfil aurora", 10, 12]];
+let fxSel = null, myInv = 0, themeSel = null, bannerFile = null, bannerRemove = false;
+const THEMES = ["#3a2a8f", "#0f5c4a", "#1b3f8a", "#7a1d1d"], PLUS = "Roda Plus"; // troque PLUS pelo nome que você escolher
+function drawFx(){
+  const prem = isPrem(me.id), box = $("fxlist"); box.innerHTML = "";
+  FX.forEach(([id, label, inv, wk]) => {
+    const ok = !inv || prem || myInv >= inv || myStreak >= wk;
+    const b = el("button", label + (ok ? "" : ` · ${inv} ${inv === 1 ? "convite" : "convites"} ou ${wk} semanas seguidas`), "ghost fxb");
+    b.type = "button"; b.disabled = !ok; b.setAttribute("aria-pressed", id === fxSel); b.onclick = () => { fxSel = id; drawFx(); }; box.append(b);
+  });
+  $("fxhint").textContent = `Você convidou ${myInv} ${myInv === 1 ? "pessoa" : "pessoas"} e está com ${myStreak} ${myStreak === 1 ? "semana seguida" : "semanas seguidas"}. Resgate a recompensa toda semana e convide amigos para liberar mais. Membros do ${PLUS} têm todos liberados.`;
+}
+function drawTheme(){
+  const box = $("tswatches"); box.innerHTML = "";
+  [null, ...THEMES].forEach(c => {
+    const b = el("button", "", "sw" + (c === themeSel ? " on" : "")); b.type = "button"; b.style.background = c || "var(--panel)";
+    b.ariaLabel = c ? "Tema " + c : "Sem tema"; b.onclick = () => { themeSel = c; drawTheme(); }; box.append(b);
+  });
+  const prem = isPrem(me.id); $("tcolor").disabled = !prem; if(themeSel) $("tcolor").value = themeSel;
+  $("bhint2").textContent = prem ? `Como membro do ${PLUS}, você pode usar GIF no banner e qualquer cor de tema.` : `GIF animado no banner e tema livre são exclusivos do ${PLUS}. Mesmo assim, você pode usar uma imagem parada.`;
+}
+$("tcolor").oninput = e => { themeSel = e.target.value; drawTheme(); };
+function drawBannerPrev(){
+  const u = bannerFile ? URL.createObjectURL(bannerFile) : bannerRemove ? "" : safeBanner(myProf), pv = $("bprev");
+  pv.style.backgroundImage = u ? `url("${u}")` : ""; pv.textContent = u ? "" : "Sem banner";
+}
+$("bpick").onclick = () => $("bfile").click();
+$("bfile").onchange = () => { const f = $("bfile").files[0]; if(f){ bannerFile = f; bannerRemove = false; drawBannerPrev(); } };
+$("brem").onclick = () => { bannerFile = null; bannerRemove = true; $("bfile").value = ""; drawBannerPrev(); };
+async function toStaticJpeg(f){ // para quem não tem o Plus: pega só o primeiro quadro (GIF vira imagem parada)
+  try{
+    const bmp = await createImageBitmap(f), W = Math.min(bmp.width, 1200), H = Math.round(bmp.height * W / bmp.width);
+    const c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").drawImage(bmp, 0, 0, W, H);
+    return await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+  }catch{ return null; }
+}
 
 // ---------- perfil ----------
 $("meBtn").onclick = async () => {
   show("profile"); mark(null); closeSide(); $("perr").textContent = "";
-  const {data} = await sb.rpc("my_birthdate"); myBirth = data; drawProfile();
+  const [b, i] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id})]); myBirth = b.data; myInv = i.data || 0; drawProfile();
 };
 function drawSwatches(){
   const box = $("swatches"); box.innerHTML = "";
@@ -436,7 +577,7 @@ function drawSwatches(){
     const b = el("button", "", "sw" + (c === accentSel ? " on" : "")); b.type = "button";
     b.style.background = c || "var(--ink)"; b.ariaLabel = c ? "Cor " + c : "Cor padrão"; b.onclick = () => { accentSel = c; drawSwatches(); }; box.append(b);
   });
-  const prem = hasTag("admin","donor","vip"); $("pcolor").disabled = !prem;
+  const prem = isPrem(me.id); $("pcolor").disabled = !prem;
   if(accentSel) $("pcolor").value = accentSel;
   $("chint").textContent = prem ? "Como doador, você pode usar qualquer cor." : "Cor livre é exclusiva para doadores e VIPs.";
   const pv = $("phead").querySelector("strong"); if(pv) pv.style.color = accentSel || "";
@@ -453,6 +594,8 @@ function drawProfile(){
   $("pbirth").value = myBirth || ""; $("pbirth").disabled = !!myBirth;
   $("bhint").textContent = myBirth ? "A data de nascimento não pode ser alterada. Só a sua idade aparece para os outros." : "Só a sua idade aparece para os outros. É preciso ter 13 anos ou mais e não dá para mudar depois.";
   accentSel = myProf.accent || null; drawSwatches();
+  fxSel = myProf.effect || null; drawFx();
+  themeSel = myProf.theme || null; drawTheme(); bannerFile = null; bannerRemove = false; $("bfile").value = ""; drawBannerPrev();
 }
 $("pick").onclick = () => $("file").click();
 $("pav").onclick = () => $("file").click();
@@ -466,6 +609,23 @@ $("psave").onclick = async () => {
     upd.username = name;
   }
   if(accentSel !== (myProf.accent || null)) upd.accent = accentSel;
+  if(fxSel !== (myProf.effect || null)) upd.effect = fxSel;
+  if(themeSel !== (myProf.theme || null)) upd.theme = themeSel;
+  if(bannerRemove) upd.banner_url = null;
+  else if(bannerFile){
+    const prem = isPrem(me.id); let blob = bannerFile, ext = "jpg";
+    if(prem){
+      ext = {"image/gif":"gif", "image/png":"png", "image/jpeg":"jpg", "image/webp":"webp"}[bannerFile.type];
+      if(!ext || bannerFile.size > 5e6) return perr.textContent = "Use PNG, JPG, WEBP ou GIF de até 5 MB.";
+    } else {
+      if(!bannerFile.type.startsWith("image/") || bannerFile.size > 8e6) return perr.textContent = "Escolha uma imagem de até 8 MB.";
+      blob = await toStaticJpeg(bannerFile); if(!blob) return perr.textContent = "Não foi possível ler essa imagem.";
+    }
+    const path = `${me.id}/banner.${ext}`;
+    const up = await sb.storage.from("banners").upload(path, blob, {upsert:true, contentType: prem ? bannerFile.type : "image/jpeg"});
+    if(up.error) return perr.textContent = "Não foi possível enviar o banner.";
+    upd.banner_url = sb.storage.from("banners").getPublicUrl(path).data.publicUrl + "?t=" + Date.now();
+  }
   if(!$("pbirth").disabled && $("pbirth").value) upd.birthdate = $("pbirth").value;
   const f = $("file").files[0];
   if(f){
@@ -480,6 +640,7 @@ $("psave").onclick = async () => {
     return perr.textContent = m.includes("name_locked") ? "Você já trocou o nome esta semana." :
       m.includes("idade_minima") ? "É preciso ter 13 anos ou mais para usar a Roda." :
       m.includes("birthdate_locked") ? "A data de nascimento não pode ser alterada." :
+      m.includes("effect_locked") ? "Esse efeito ainda está bloqueado. Convide mais amigos para liberar." :
       m.includes("premium_only") ? "Cor livre é exclusiva para doadores e VIPs." :
       error.code === "23505" ? "Esse nome de usuário já está em uso." : "Não foi possível salvar.";
   }
@@ -487,6 +648,7 @@ $("psave").onclick = async () => {
   myProf = cache[me.id] = data; if(upd.birthdate) myBirth = upd.birthdate;
   $("file").value = ""; drawMe(); drawProfile(); perr.className = "err ok"; perr.textContent = "Perfil salvo.";
 };
+if(REF){ $("refnote").classList.remove("hide"); $("swap").click(); }
 </script>
 </body>
 </html>
