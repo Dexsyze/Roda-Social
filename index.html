@@ -264,8 +264,8 @@ const SUPABASE_KEY = "sb_publishable_UA0xjaueCE3NKpn4Nr_B_A_ES_RvK-w";
 })();
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
-const GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
+let COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
+let GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
 const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"], founder:["FUNDADOR","#ff9f43"]};
 const PREM = ["admin","founder","donor","vip"], ORDER = ["admin","founder","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
 let me, myProf, signup = false, started = false, ctx = {type:"global"}, tok = 0, accentSel = null, myBirth = null;
@@ -338,6 +338,9 @@ sb.auth.onAuthStateChange((_e, s) => { if(s){me = s.user; start()} else if(start
 async function start(){
   if(started) return; started = true;
   $("auth").classList.add("hide"); $("app").classList.remove("hide");
+  // se o SQL novo ainda não foi rodado, o site continua funcionando sem os recursos novos
+  if((await sb.from("profiles").select("worn_group").limit(1)).error) COLS = COLS.replace(",worn_group", "");
+  if((await sb.from("groups").select("tag,tag_expires").limit(1)).error) GCOLS = GCOLS.replace(",tag,tag_expires", "");
   myProf = await getProf(me.id); await loadTags(); drawMe();
   await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly(), loadItems()]);
   const inv = new URLSearchParams(location.search).get("convite");
@@ -443,7 +446,8 @@ $("form").onsubmit = async e => {
   if(r.error) $("inp").value = content; else { replyTo = null; $("rbar").classList.add("hide"); }
 };
 function sendMsg(x){
-  if(ctx.type === "global") return sb.from("messages").insert({user_id: me.id, content: x.content, reply_text: x.reply_text || null});
+  x = Object.fromEntries(Object.entries(x).filter(([, v]) => v !== null && v !== undefined));
+  if(ctx.type === "global") return sb.from("messages").insert({user_id: me.id, ...x});
   if(ctx.type === "group") return sb.from("group_messages").insert({group_id: ctx.id, user_id: me.id, ...x});
   return sb.from("dms").insert({sender_id: me.id, receiver_id: ctx.id, ...x});
 }
