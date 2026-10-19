@@ -2,8 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#050508">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Roda">
+<link rel="manifest" href="manifest.webmanifest">
 <title>Roda</title>
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="apple-touch-icon" href="logo.png">
@@ -112,6 +118,44 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
 @keyframes pop{0%{transform:scale(.3) rotate(-12deg);opacity:0}60%{transform:scale(1.2) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}
 .rwd-e{font-size:4.5rem;line-height:1.2;animation:pop .7s ease-out}
 @media (prefers-reduced-motion:reduce){.rwd-e{animation:none}}
+
+/* ===== visual de app ===== */
+html,body{height:100dvh;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+body{-webkit-font-smoothing:antialiased}
+#app{height:100dvh}
+button,.nav,.av,.sw{user-select:none;-webkit-user-select:none;touch-action:manipulation}
+button{transition:filter .12s,background .12s}button:active{filter:brightness(.85)}
+input,textarea,select{font-size:16px;border-radius:12px}
+#side{background:var(--bg);border-right:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 10px calc(12px + env(safe-area-inset-bottom))}
+.nav{border-radius:12px;padding:10px 12px}.nav:hover{background:var(--panel)}
+.sh{text-transform:none;letter-spacing:0;padding:16px 10px 4px}
+.card{border-radius:14px;background:var(--panel);margin-top:8px}
+#head{background:var(--bg);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 14px 10px;gap:6px 10px;flex-wrap:nowrap}
+#head b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;font-size:.82rem;flex:1}
+#head button{padding:7px 12px;flex-shrink:0}
+#gwrap{position:relative;flex-shrink:0}
+#more{display:none;font-size:1.3rem;padding:2px 12px}
+#gwrap:has(#gact button:not(.hide)) #more{display:inline-block}
+#gact{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:8;flex-direction:column;gap:2px;min-width:200px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 14px 36px rgba(0,0,0,.55)}
+#gact.open{display:flex}
+#gact button{background:transparent;border:0;text-align:left;padding:11px 12px;border-radius:10px;font-weight:600}
+#gact button:hover{background:var(--mine)}
+.feed{padding:14px 12px;gap:10px}
+.msg{max-width:min(720px,100%)}
+.msg .b{background:var(--panel);border:0;border-radius:4px 18px 18px 18px;padding:9px 13px}
+.msg.me .b{background:var(--mine);border-radius:18px 4px 18px 18px}
+.act2{opacity:.5}
+@media (hover:none){.act2{opacity:.85}.act2 button{padding:2px 6px;font-size:1rem}}
+form.send{background:var(--bg);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));align-items:center}
+form.send input{border-radius:999px;padding:12px 16px;background:var(--panel)}
+form.send button{border-radius:999px;min-width:44px;min-height:44px;padding:0 16px}
+form.send button.ghost{padding:0;width:44px}
+#profile{padding:calc(16px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom))}
+.pbox{border-radius:20px;border:0;background:var(--panel)}
+dialog{border:0;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.toast{bottom:calc(24px + env(safe-area-inset-bottom));border-radius:999px}
+@media (max-width:720px){#side{width:86%;box-shadow:12px 0 40px rgba(0,0,0,.5)}.msg .av{width:34px;height:34px}}
 </style>
 </head>
 <body>
@@ -151,11 +195,13 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
         <button id="menu" class="ghost mini" aria-label="Abrir menu">☰</button>
         <b id="title"></b><span id="sub"></span>
         <button id="join" class="hide">Entrar no grupo</button>
+        <div id="gwrap"><button id="more" class="ghost mini" aria-label="Mais opções" aria-haspopup="true">⋯</button><div id="gact">
         <button id="invite" class="ghost hide">Copiar link de convite</button>
         <button id="reset" class="ghost hide">Novo link</button>
         <button id="gedit" class="ghost hide">Editar grupo</button>
         <button id="gdel" class="ghost hide">Excluir grupo</button>
         <button id="leave" class="ghost hide">Sair do grupo</button>
+        </div></div>
       </div>
       <div class="feed" id="feed"></div>
       <div id="rbar" class="hide"><span id="rtxt"></span><button id="rx_x" type="button" aria-label="Cancelar resposta">✕</button></div>
@@ -264,12 +310,11 @@ const SUPABASE_KEY = "sb_publishable_UA0xjaueCE3NKpn4Nr_B_A_ES_RvK-w";
 })();
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-let COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
-let GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
+const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
+const GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
 const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"], founder:["FUNDADOR","#ff9f43"]};
 const PREM = ["admin","founder","donor","vip"], ORDER = ["admin","founder","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
 let me, myProf, signup = false, started = false, ctx = {type:"global"}, tok = 0, accentSel = null, myBirth = null;
-let tagGroups = [];
 let gtags = {}, replyTo = null, rxMap = {}, rec = null;
 let groups = [], myGroups = new Set(), users = [], fr = {}, tags = {};
 const cache = {}, seen = new Set();
@@ -280,8 +325,7 @@ const el = (tag, text, cls) => Object.assign(document.createElement(tag), {textC
 const toast = t => { const d = $("toast"); d.textContent = t; d.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => d.classList.remove("on"), 2800); };
 async function getProf(id){
   if(cache[id]) return cache[id];
-  const {data, error} = await sb.from("profiles").select(COLS).eq("id", id).single();
-  if(error){ console.error("perfil:", error); toast("Erro ao carregar perfil: " + error.message); }
+  const {data} = await sb.from("profiles").select(COLS).eq("id", id).single();
   return cache[id] = data || {id, username:"?"};
 }
 function avatar(p){
@@ -340,9 +384,6 @@ sb.auth.onAuthStateChange((_e, s) => { if(s){me = s.user; start()} else if(start
 async function start(){
   if(started) return; started = true;
   $("auth").classList.add("hide"); $("app").classList.remove("hide");
-  // se alguma coluna nova não existir no banco, o site continua funcionando sem ela
-  if((await sb.from("profiles").select("worn_group").limit(1)).error) COLS = COLS.replace(",worn_group", "");
-  if((await sb.from("groups").select("tag,tag_expires").limit(1)).error) GCOLS = GCOLS.replace(",tag,tag_expires", "");
   myProf = await getProf(me.id); await loadTags(); drawMe();
   await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly(), loadItems()]);
   const inv = new URLSearchParams(location.search).get("convite");
@@ -352,6 +393,7 @@ async function start(){
   rt("group_messages", m => ctx.type === "group" && m.group_id === ctx.id);
   rt("dms", m => ctx.type === "dm" && (m.sender_id === ctx.id || m.receiver_id === ctx.id));
   rt("announcements", () => ctx.type === "news");
+  ["messages", "group_messages", "dms"].forEach(t => sb.channel("del_" + t).on("postgres_changes",{event:"DELETE",schema:"public",table:t}, e => { if(e.old && e.old.id != null) removeMsg(t, e.old.id); }).subscribe());
   const ping = () => sb.rpc("touch_seen"); ping(); setInterval(ping, 60000);
   sb.channel("rx").on("postgres_changes",{event:"*",schema:"public",table:"message_reactions"}, e => { const r = e.new?.msg_id ? e.new : e.old; if(r?.msg_id) drawRx(r.msg_table, r.msg_id); }).subscribe();
   setInterval(async () => { await loadTags(); await loadFriends(); drawUsers(); }, 30000);
@@ -377,7 +419,10 @@ async function addMsg(m, table){
   const id = String(m.id), act = el("span", "", "act2");
   const rb = el("button", "↩"); rb.type = "button"; rb.title = "Responder"; rb.onclick = () => setReply(p.username, m.content);
   const eb = el("button", "😊"); eb.type = "button"; eb.title = "Reagir"; eb.onclick = () => pickRx(table, id, eb);
-  act.append(rb, eb); h.append(act); b.append(h);
+  act.append(rb, eb);
+  const mineMsg = p.id === me.id;
+  if(mineMsg || (table === "messages" && hasTag("admin"))){ const db = el("button", "🗑"); db.type = "button"; db.title = "Apagar"; db.onclick = () => delMsg(table, m, mineMsg); act.append(db); }
+  row.dataset.k = key; h.append(act); b.append(h);
   if(m.reply_text) b.append(el("div", m.reply_text, "quote"));
   const mu = m.media_url || "";
   if(mu.startsWith(SUPABASE_URL + "/storage/v1/object/public/chat-media/") && m.media_kind === "image"){ const i = document.createElement("img"); i.src = mu; i.alt = "Foto"; i.className = "m"; i.loading = "lazy"; b.append(i); }
@@ -386,6 +431,19 @@ async function addMsg(m, table){
   const rx = el("div", "", "rx"); rxMap[table + id] = rx; b.append(rx); drawRx(table, id);
   row.append(av, b);
   const f = $("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop = f.scrollHeight;
+}
+async function delMsg(table, m, mineMsg){
+  if(!confirm("Apagar esta mensagem? Isso não pode ser desfeito.")) return;
+  let ok;
+  if(table === "messages" && !mineMsg){ const r = await sb.rpc("admin_delete_message", {mid: m.id}); ok = !r.error; }
+  else { const r = await sb.from(table).delete().eq("id", m.id).select("id"); ok = !r.error && r.data && r.data.length > 0; }
+  if(!ok) return toast("Não foi possível apagar.");
+  removeMsg(table, m.id);
+}
+function removeMsg(table, id){
+  const k = table + id; seen.delete(k); delete rxMap[k];
+  const r = $("feed").querySelector(`[data-k="${k}"]`); if(r) r.remove();
+  if(!$("feed").querySelector(".msg") && !$("feed").querySelector(".empty")) $("feed").append(el("div", "Ainda não tem mensagens. Que tal começar a conversa?", "empty"));
 }
 async function drawRx(table, id){
   const box = rxMap[table + id]; if(!box) return;
@@ -441,6 +499,8 @@ async function openDm(p, btn){
 $("nGlobal").onclick = openGlobal;
 $("nNews").onclick = () => openCtx({type:"news"}, "📢 Anúncios", "avisos oficiais da Roda (só leitura)", $("nNews"));
 $("menu").onclick = () => $("side").classList.add("open");
+$("more").onclick = e => { e.stopPropagation(); $("gact").classList.toggle("open"); };
+document.addEventListener("click", () => $("gact").classList.remove("open"));
 $("form").onsubmit = async e => {
   e.preventDefault(); const content = $("inp").value.trim(); if(!content) return; $("inp").value = "";
   let r;
@@ -523,7 +583,6 @@ async function loadGroups(){
   const [g, m] = await Promise.all([
     sb.from("groups").select(GCOLS).order("created_at",{ascending:false}).limit(60),
     sb.from("group_members").select("group_id").eq("user_id", me.id)]);
-  if(g.error){ console.error("grupos:", g.error); toast("Erro ao carregar grupos: " + g.error.message); }
   groups = g.data || []; myGroups = new Set((m.data || []).map(x => x.group_id)); drawGroups();
 }
 function openGroup(g, btn){ openCtx({type:"group", id: g.id, g}, g.name, (g.description || "") + (g.is_private ? (g.description ? " · " : "") + "grupo privado" : ""), btn); }
@@ -767,7 +826,10 @@ async function saveLinks(){ // devolve uma mensagem de erro, ou null se deu cert
 // ---------- perfil ----------
 $("meBtn").onclick = async () => {
   show("profile"); mark(null); closeSide(); $("perr").textContent = "";
-  const [b, i, tg] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id}), sb.rpc("my_tag_groups"), loadItems(), loadGroups()]); myBirth = b.data; myInv = i.data || 0; tagGroups = tg.data || []; drawProfile();
+  const [b, i] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id}), loadItems()]); myBirth = b.data; myInv = i.data || 0;
+  const wgid = myProf.worn_group;
+  if(wgid && !groups.some(g => String(g.id) === String(wgid))){ const wg = await sb.from("groups").select(GCOLS).eq("id", wgid).maybeSingle(); if(wg.data) groups.push(wg.data); }
+  drawProfile();
 };
 function drawSwatches(){
   const box = $("swatches"); box.innerHTML = "";
@@ -797,7 +859,7 @@ function drawProfile(){
   themeSel = myProf.theme || null; drawTheme(); bannerFile = null; bannerRemove = false; $("bfile").value = ""; drawBannerPrev();
   drawLinks();
   const w = $("wear"); w.innerHTML = ""; w.append(new Option("Nenhuma", ""));
-  tagGroups.filter(g => g.tag && new Date(g.tag_expires) > Date.now()).forEach(g => w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
+  groups.filter(g => g.tag && new Date(g.tag_expires) > Date.now() && (myGroups.has(g.id) || g.owner_id === me.id || String(g.id) === String(myProf.worn_group))).forEach(g => w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
   w.value = myProf.worn_group || "";
 }
 $("pick").onclick = () => $("file").click();
