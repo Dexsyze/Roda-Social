@@ -461,13 +461,21 @@ function drawGroups(){
 }
 let editing=null;
 function openGroupDlg(g){
-  editing=g; $("gerr").textContent=""; $("gtitle").textContent=g?"Editar grupo":"Criar grupo"; $("gok").textContent=g?"Salvar":"Criar";
-  $("gname").value=g?g.name:""; $("gdesc").value=g?g.description:""; $("gpriv").checked=g?g.is_private:false;
-  $("gicon").value=g&&g.icon?g.icon:"";
-  const gc=$("gtagc"); if(gc) gc.value=g&&/^#[0-9a-f]{6}$/i.test(g.tag_color||"")?g.tag_color:"#8b73ff";
-  const gw=$("gtagw"); if(gw) gw.classList.toggle("hide",!(g&&g.owner_id===me.id));
-  const gt=$("gtag"); if(gt) gt.value=g&&g.tag?g.tag:"";
-  const ge=$("gtagemoji"); if(ge) ge.value=g&&g.tag_emoji?g.tag_emoji:"";
+  editing=g; 
+  $("gerr").textContent=""; 
+  $("gtitle").textContent=g?"Editar grupo":"Criar grupo"; 
+  $("gok").textContent=g?"Salvar":"Criar";
+  // sempre pega dados frescos do groups array
+  const fresh = g ? (groups.find(x=> String(x.id)===String(g.id)) || g) : null;
+  const gg = fresh || g;
+  $("gname").value=gg?gg.name:""; 
+  $("gdesc").value=gg?gg.description:""; 
+  $("gpriv").checked=gg?gg.is_private:false;
+  $("gicon").value=gg&&gg.icon?gg.icon:"";
+  const gc=$("gtagc"); if(gc) gc.value=gg&&/^#[0-9a-f]{6}$/i.test(gg.tag_color||"")?gg.tag_color:"#8b73ff";
+  const gw=$("gtagw"); if(gw) gw.classList.toggle("hide",!(gg&&gg.owner_id===me.id));
+  const gt=$("gtag"); if(gt) gt.value=gg&&gg.tag?gg.tag:"";
+  const ge=$("gtagemoji"); if(ge) ge.value=gg&&gg.tag_emoji?gg.tag_emoji:"";
   const left=g&&g.tag_expires?Math.ceil((new Date(g.tag_expires)-Date.now())/864e5):0;
   const gi=$("gtaginfo"); 
   if(gi){
