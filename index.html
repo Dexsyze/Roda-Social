@@ -2,670 +2,885 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#050508">
-<link rel="manifest" href="manifest.webmanifest">
 <title>Roda</title>
 <link rel="icon" href="logo.png" type="image/png">
+<link rel="apple-touch-icon" href="logo.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
 <style>
 :root{color-scheme:dark;--bg:#050508;--side:#08080d;--panel:#0d0d15;--ink:#e8e8f4;--muted:#80809f;--brand:#8b73ff;--on:#fff;--line:#1a1a2b;--mine:#171436;--bad:#ff6b9a;--ok:#4cd9a0}
-*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 button,input,textarea,select{font:inherit;color:inherit}
 input,textarea,select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--side)}
-input:disabled{opacity:.55}button{cursor:pointer;border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:var(--on);font-weight:600}
-button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}button:disabled{opacity:.5;cursor:not-allowed}
-.hide{display:none!important}.err{color:var(--bad);min-height:1.3em;margin:6px 0}.err.ok{color:var(--ok)}.hint{color:var(--muted);font-size:.86rem;margin:4px 0 0}
+input:disabled{opacity:.55}
+button{cursor:pointer;border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:var(--on);font-weight:600}
+button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.hide{display:none!important}
+.err{color:var(--bad);min-height:1.3em;margin:6px 0}.err.ok{color:var(--ok)}
+.hint{color:var(--muted);font-size:.86rem;margin:4px 0 0}
 #auth{margin:12vh auto 0;width:min(380px,92%);background:var(--panel);padding:26px;border-radius:16px;border:1px solid var(--line)}
-#app{height:100%;display:flex}#side{width:272px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px;gap:4px;overflow-y:auto;flex-shrink:0}
-.brand{font-weight:800;font-size:1.4rem;padding:4px 8px 8px;display:flex;align-items:center;gap:10px}.logo{width:36px;height:36px;border-radius:10px;object-fit:cover}
+#auth h1{margin:0 0 4px;font-size:2rem}#auth p{margin:0 0 14px;color:var(--muted)}#auth input{margin-bottom:10px}
+#app{height:100%;display:flex}
+#side{width:272px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px;gap:4px;overflow-y:auto;flex-shrink:0}
+.brand{font-weight:800;font-size:1.4rem;padding:4px 8px 8px;display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;border-radius:10px;object-fit:cover}
 .nav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;color:var(--ink);padding:7px 10px;font-weight:500}
-.nav span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nav[aria-current="true"]{background:var(--mine);font-weight:700}
+.nav span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav[aria-current="true"]{background:var(--mine);font-weight:700}
 .rw{display:flex;align-items:center;gap:4px}.rw .nav{flex:1;min-width:0}
 .sh{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.85rem;font-weight:700;padding:12px 8px 2px}
-.mini{padding:2px 10px;font-size:1.05rem;line-height:1.4}#side input{padding:8px 10px;margin:2px 0 4px}.col{display:flex;flex-direction:column;gap:2px}
+.mini{padding:2px 10px;font-size:1.05rem;line-height:1.4}
+#side input{padding:8px 10px;margin:2px 0 4px}
+.col{display:flex;flex-direction:column;gap:2px}
 .card{margin-top:auto;display:flex;gap:10px;align-items:center;background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:8px;text-align:left;width:100%}
-main{flex:1;min-width:0;display:flex;flex-direction:column}#chat{flex:1;min-height:0;display:flex;flex-direction:column}
+main{flex:1;min-width:0;display:flex;flex-direction:column}
+#chat{flex:1;min-height:0;display:flex;flex-direction:column}
 #head{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
-#head b{font-size:1.05rem}#sub{color:var(--muted);margin-right:auto}#head button{padding:6px 12px}#menu{display:none}
-.feed{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}.empty{margin:auto;color:var(--muted);text-align:center;max-width:32ch}
-.msg{display:flex;gap:10px;max-width:780px}.msg .b{background:var(--panel);padding:8px 12px;border-radius:14px;border:1px solid var(--line);min-width:0}
-.msg.me .b{background:var(--mine)}.msg small{color:var(--muted);margin-left:8px}.msg p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
-.nm{display:inline-flex;align-items:center;flex-wrap:wrap}.tag{font-size:.64rem;font-weight:800;padding:1px 6px;border-radius:6px;border:1px solid currentColor;margin-left:6px;letter-spacing:.03em}
+#head b{font-size:1.05rem}#sub{color:var(--muted);margin-right:auto}
+#head button{padding:6px 12px}
+#menu{display:none}
+.feed{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.empty{margin:auto;color:var(--muted);text-align:center;max-width:32ch}
+.msg{display:flex;gap:10px;max-width:780px}
+.msg .b{background:var(--panel);padding:8px 12px;border-radius:14px;border:1px solid var(--line);min-width:0}
+.msg.me .b{background:var(--mine)}
+.msg small{color:var(--muted);margin-left:8px}
+.msg p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.nm{display:inline-flex;align-items:center;flex-wrap:wrap}
+.tag{font-size:.64rem;font-weight:800;padding:1px 6px;border-radius:6px;border:1px solid currentColor;margin-left:6px;letter-spacing:.03em}
 .av{width:38px;height:38px;border-radius:50%;background:var(--brand);color:var(--on);display:grid;place-items:center;font-weight:700;overflow:hidden;flex-shrink:0}
 .av img{width:100%;height:100%;object-fit:cover}
 form.send{display:flex;gap:8px;padding:12px 16px;background:var(--panel);border-top:1px solid var(--line)}
-#profile{flex:1;overflow-y:auto;padding:24px 16px}.pbox{max-width:500px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+#profile{flex:1;overflow-y:auto;padding:24px 16px}
+.pbox{max-width:500px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
 .pbox h2{margin:0 0 4px;display:flex;align-items:center;flex-wrap:wrap}.pbox .av{width:96px;height:96px;font-size:2.2rem;cursor:pointer}
-.top{display:flex;gap:16px;align-items:center;margin-bottom:6px}label{display:block;font-weight:600;margin:14px 0 4px}
-.lnks{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.lnks a{padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:var(--side);color:var(--ink);text-decoration:none;font-size:.85rem;font-weight:600}
+.top{display:flex;gap:16px;align-items:center;margin-bottom:6px}
+label{display:block;font-weight:600;margin:14px 0 4px}
+.lnks{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.lnks a{padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:var(--side);color:var(--ink);text-decoration:none;font-size:.85rem;font-weight:600}
+.lnks a:hover{border-color:var(--brand)}
 .lnrow{display:flex;gap:8px;align-items:center;margin-top:8px}.lnrow span{width:92px;font-weight:600;flex-shrink:0}
-.rx{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.rx button{padding:1px 8px;font-size:.8rem;background:var(--side);border:1px solid var(--line);border-radius:999px;color:var(--ink)}.rx button.on{border-color:var(--brand)}
-.act2{margin-left:8px;opacity:.55}.act2 button{background:none;padding:0 3px;font-size:.85rem;color:var(--ink)}.msg:hover .act2{opacity:1}
+.rx{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.rx button{padding:1px 8px;font-size:.8rem;background:var(--side);border:1px solid var(--line);border-radius:999px;color:var(--ink)}
+.rx button.on{border-color:var(--brand)}
+.act2{margin-left:8px;opacity:.55}@media (hover:hover){.act2{opacity:0}.msg:hover .act2,.msg:focus-within .act2{opacity:1}}
+details.sec>summary{cursor:pointer;font-weight:800}details.sec>summary::marker{color:var(--muted)}.act2 button{background:none;padding:0 3px;font-size:.85rem;color:var(--ink)}.msg:hover .act2{opacity:1}
 .quote{border-left:3px solid var(--brand);padding:1px 8px;margin:3px 0;color:var(--muted);font-size:.85rem}
 .msg img.m{max-width:min(320px,100%);border-radius:10px;display:block;margin-top:4px}.msg audio{max-width:100%;margin-top:4px}
 #rbar{display:flex;gap:8px;align-items:center;padding:6px 16px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
-#rbar button{background:none;color:var(--ink);padding:0 6px}.gtg{color:#8b73ff;font-weight:800;font-size:.78rem;margin-right:5px}
+#rbar button{background:none;color:var(--ink);padding:0 6px}
+.gtg{color:#8b73ff;font-weight:800;font-size:.78rem;margin-right:5px}
+.vip{margin:0 0 14px;padding:18px;border-radius:16px;border:1px solid #3a2a8f;background:linear-gradient(160deg,#1b1450,var(--panel) 70%);max-width:780px}
+.vip h3{margin:0;font-size:1.2rem}.vip .pr{color:#b48cff;font-weight:800;margin:2px 0 12px}
+.vip ul{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}.vip li b{display:block}.vip li span{color:var(--muted);font-size:.88rem}
+.vip li::before{content:"✓ ";color:var(--ok);font-weight:800}
 .sec{margin:20px 0 0;padding-top:4px;border-top:1px solid var(--line);font-weight:800}
-#swatches,#tswatches{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sw{width:30px;height:30px;border-radius:50%;padding:0;border:2px solid var(--line)}.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--brand)}
-input[type=color]{width:46px;height:34px;padding:2px}.chk{display:flex;gap:8px;align-items:center;font-weight:500}.chk input{width:auto}
-dialog{border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);width:min(430px,92%)}dialog::backdrop{background:rgba(0,0,5,.7)}
-.row{display:flex;gap:8px;margin-top:14px}.row button{flex:1}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-weight:600;opacity:0;pointer-events:none;z-index:20;max-width:90%}.toast.on{opacity:1}
-@media (max-width:720px){#side{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-100%);transition:transform .2s;width:84%}#side.open{transform:none}#menu{display:block}}
+#swatches,#tswatches{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sw{width:30px;height:30px;border-radius:50%;padding:0;border:2px solid var(--line)}
+.sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--brand)}
+input[type=color]{width:46px;height:34px;padding:2px}
+.chk{display:flex;gap:8px;align-items:center;font-weight:500}.chk input{width:auto}
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);width:min(430px,92%)}
+dialog::backdrop{background:rgba(0,0,5,.7)}
+.row{display:flex;gap:8px;margin-top:14px}.row button{flex:1}
+.adr{padding:4px 0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-weight:600;opacity:0;pointer-events:none;z-index:20;max-width:90%}
+.toast.on{opacity:1}
+@media (max-width:720px){#side{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-100%);transition:transform .2s;width:84%}
+#side.open{transform:none}#menu{display:block}}
+@media (prefers-reduced-motion:reduce){#side{transition:none}}
 @keyframes ringp{0%,100%{box-shadow:0 0 0 2px #8b73ff,0 0 10px 2px rgba(139,115,255,.55)}50%{box-shadow:0 0 0 2px #4cd9a0,0 0 14px 3px rgba(76,217,160,.55)}}
-@keyframes slide{to{background-position:300% 0}}@keyframes glowp{0%,100%{text-shadow:0 0 3px currentColor}50%{text-shadow:0 0 12px currentColor,0 0 2px currentColor}}
-.av.fx-ring{animation:ringp 3s ease-in-out infinite}.fx-gradient{background:linear-gradient(90deg,#8b73ff,#4cd9a0,#5aa9ff,#ff8a5b,#8b73ff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important;animation:slide 5s linear infinite}.fx-glow{animation:glowp 2.4s ease-in-out infinite}
-#pdlg{padding:0;overflow:hidden}.ptop{height:120px;background:linear-gradient(120deg,var(--mine),#1b1840);background-size:300% 100%}
+@keyframes slide{to{background-position:300% 0}}
+@keyframes glowp{0%,100%{text-shadow:0 0 3px currentColor}50%{text-shadow:0 0 12px currentColor,0 0 2px currentColor}}
+.av.fx-ring{animation:ringp 3s ease-in-out infinite}
+.fx-gradient{background:linear-gradient(90deg,#8b73ff,#4cd9a0,#5aa9ff,#ff8a5b,#8b73ff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important;animation:slide 5s linear infinite}
+.fx-glow{animation:glowp 2.4s ease-in-out infinite}
+#pdlg{padding:0;overflow:hidden}
+.ptop{height:120px;background:linear-gradient(120deg,var(--mine),#1b1840);background-size:300% 100%}
 .pcard.fx-aurora .ptop{background-image:linear-gradient(120deg,#2a1d7a,#0f5c4a,#1b3f8a,#2a1d7a);animation:slide 8s linear infinite}
-.pbody{padding:0 20px 20px}#pcav{margin-top:-44px;margin-bottom:8px}#pcav .av{width:80px;height:80px;font-size:1.8rem;border:4px solid var(--panel)}
-#pcname{margin:0 0 4px;font-size:1.3rem}#fxlist{display:flex;flex-wrap:wrap;gap:8px}.fxb[aria-pressed="true"]{border-color:var(--brand);background:var(--mine)}
+.pbody{padding:0 20px 20px}
+#pcav{margin-top:-44px;margin-bottom:8px}#pcav .av{width:80px;height:80px;font-size:1.8rem;border:4px solid var(--panel)}
+#pcname{margin:0 0 4px;font-size:1.3rem}
+#fxlist{display:flex;flex-wrap:wrap;gap:8px}.fxb[aria-pressed="true"]{border-color:var(--brand);background:var(--mine)}
+@media (prefers-reduced-motion:reduce){.av.fx-ring,.fx-gradient,.fx-glow,.pcard.fx-aurora .ptop{animation:none}}
 .bprev{height:96px;border-radius:12px;border:1px solid var(--line);background:var(--side) center/cover no-repeat;display:grid;place-items:center;color:var(--muted);font-size:.9rem}
-.lbl{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:2px}.psec{margin-top:14px;min-width:0}.psec p{margin:0;overflow-wrap:anywhere}
-.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 18px}.emb{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.lbl{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:2px}
+.psec{margin-top:14px;min-width:0}.psec p{margin:0;overflow-wrap:anywhere}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 18px}
+.emb{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 #pcemb span{background:var(--side);border:1px solid var(--line);border-radius:10px;padding:3px 9px;font-size:1.1rem}
-@keyframes pop{0%{transform:scale(.3) rotate(-12deg);opacity:0}60%{transform:scale(1.2) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}.rwd-e{font-size:4.5rem;line-height:1.2;animation:pop .7s ease-out}
-html,body{height:100dvh;overscroll-behavior:none}body{-webkit-font-smoothing:antialiased}#app{height:100dvh}
-button,.nav,.av,.sw{user-select:none;touch-action:manipulation}input,textarea,select{font-size:16px;border-radius:12px}
-#side{padding:calc(12px + env(safe-area-inset-top)) 10px calc(12px + env(safe-area-inset-bottom))}.nav{border-radius:12px;padding:10px 12px}
-#head{background:var(--bg);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
-#gwrap{position:relative;flex-shrink:0}#more{display:none;font-size:1.3rem;padding:2px 12px}
-#gwrap:has(#gact button:not(.hide)) #more{display:inline-block}
-#gact{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:8;flex-direction:column;gap:2px;min-width:200px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 14px 36px rgba(0,0,0,.55)}
-#gact.open{display:flex}#gact button{background:transparent;border:0;text-align:left;padding:11px 12px;border-radius:10px;font-weight:600}
-.feed{padding:14px 12px;gap:10px}.msg{max-width:min(720px,100%)}.msg .b{border:0;border-radius:4px 18px 18px 18px;padding:9px 13px}.msg.me .b{border-radius:18px 4px 18px 18px}
-form.send{background:var(--bg);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));align-items:center}
-form.send input{border-radius:999px;padding:12px 16px;background:var(--panel)}form.send button{border-radius:999px;min-width:44px;min-height:44px;padding:0 16px}
-form.send button.ghost{padding:0;width:44px}#profile{padding:calc(16px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom))}
-.pbox{border-radius:20px;border:0}.toast{bottom:calc(24px + env(safe-area-inset-bottom));border-radius:999px}
+@keyframes pop{0%{transform:scale(.3) rotate(-12deg);opacity:0}60%{transform:scale(1.2) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.rwd-e{font-size:4.5rem;line-height:1.2;animation:pop .7s ease-out}
+@media (prefers-reduced-motion:reduce){.rwd-e{animation:none}}
 </style>
 </head>
 <body>
+
 <div id="auth">
   <img class="logo" src="logo.png" alt="" style="width:56px;height:56px;border-radius:14px;margin-bottom:10px" onerror="this.remove()">
-  <h1>Roda</h1><p>Converse com gente do mundo todo.</p>
+  <h1>Roda</h1>
+  <p>Converse com gente do mundo todo.</p>
   <p class="hint hide" id="refnote">Você foi convidado para a Roda! Crie sua conta abaixo.</p>
   <input id="username" class="hide" placeholder="Nome de usuário (3 a 20 letras, números ou _)" maxlength="20" autocomplete="username">
   <input id="email" type="email" placeholder="E-mail" autocomplete="email">
   <input id="pass" type="password" placeholder="Senha (mín. 6 caracteres)" autocomplete="current-password">
-  <p class="err" id="autherr" role="alert"></p><button id="go" style="width:100%">Entrar</button>
+  <p class="err" id="autherr" role="alert"></p>
+  <button id="go" style="width:100%">Entrar</button>
   <button id="swap" class="ghost" style="width:100%;margin-top:8px">Criar uma conta</button>
 </div>
+
 <div id="app" class="hide">
   <aside id="side">
     <div class="brand"><img class="logo" src="logo.png" alt="" onerror="this.remove()">Roda</div>
-    <button class="nav" id="nGlobal"># Chat global</button><button class="nav" id="nNews">📢 Anúncios</button>
+    <button class="nav" id="nGlobal"># Chat global</button>
+    <button class="nav" id="nNews">📢 Anúncios</button>
     <div class="sh">Amigos</div><div class="col" id="flist"></div>
-    <div class="sh">Grupos <span><button class="mini ghost" id="joing">↗</button> <button class="mini ghost" id="newg">+</button></span></div>
+    <div class="sh">Grupos <span><button class="mini ghost" id="joing" aria-label="Entrar com convite" title="Entrar com convite">↗</button> <button class="mini ghost" id="newg" aria-label="Criar grupo" title="Criar grupo">+</button></span></div>
     <div class="col" id="glist"></div>
-    <div class="sh">Pessoas</div><input id="search" placeholder="Buscar pessoas" aria-label="Buscar pessoas">
+    <div class="sh">Pessoas</div>
+    <input id="search" placeholder="Buscar pessoas" aria-label="Buscar pessoas">
     <div class="col" id="ulist"></div>
     <button class="nav" id="weekly" style="margin-top:auto">🎁 Recompensa da semana</button>
     <button class="nav" id="inviteSite">Convidar amigos (ganhe efeitos)</button>
     <button class="card" id="meBtn" style="margin-top:6px" aria-label="Editar meu perfil"></button>
   </aside>
+
   <main>
     <div id="chat">
-      <div id="head"><button id="menu" class="ghost mini" aria-label="Abrir menu">☰</button><b id="title"></b><span id="sub"></span>
+      <div id="head">
+        <button id="menu" class="ghost mini" aria-label="Abrir menu">☰</button>
+        <b id="title"></b><span id="sub"></span>
         <button id="join" class="hide">Entrar no grupo</button>
-        <div id="gwrap"><button id="more" class="ghost mini">⋯</button><div id="gact">
-        <button id="invite" class="ghost hide">Copiar link de convite</button><button id="reset" class="ghost hide">Novo link</button>
-        <button id="gedit" class="ghost hide">Editar grupo</button><button id="gdel" class="ghost hide">Excluir grupo</button><button id="leave" class="ghost hide">Sair do grupo</button>
-        </div></div></div>
+        <button id="invite" class="ghost hide">Copiar link de convite</button>
+        <button id="reset" class="ghost hide">Novo link</button>
+        <button id="gedit" class="ghost hide">Editar grupo</button>
+        <button id="gdel" class="ghost hide">Excluir grupo</button>
+        <button id="leave" class="ghost hide">Sair do grupo</button>
+      </div>
       <div class="feed" id="feed"></div>
-      <div id="rbar" class="hide"><span id="rtxt"></span><button id="rx_x" type="button">✕</button></div>
-      <form class="send" id="form"><button type="button" class="ghost hide" id="attach">📷</button><button type="button" class="ghost hide" id="mic">🎤</button><input type="file" id="mfile" accept="image/png,image/jpeg,image/webp,image/gif" class="hide"><input id="inp" placeholder="Escreva uma mensagem" maxlength="1000" autocomplete="off"><button>Enviar</button></form>
+      <div id="rbar" class="hide"><span id="rtxt"></span><button id="rx_x" type="button" aria-label="Cancelar resposta">✕</button></div>
+      <form class="send" id="form"><button type="button" class="ghost hide" id="attach" aria-label="Enviar foto">📷</button><button type="button" class="ghost hide" id="mic" aria-label="Gravar áudio">🎤</button><input type="file" id="mfile" accept="image/png,image/jpeg,image/webp,image/gif" class="hide"><input id="inp" placeholder="Escreva uma mensagem" maxlength="1000" autocomplete="off"><button>Enviar</button></form>
     </div>
-    <div id="profile" class="hide"><div class="pbox">
-        <div class="top"><div class="av" id="pav" title="Trocar foto" tabindex="0" role="button"></div><div><h2 id="phead"></h2><div class="hint" id="page"></div></div></div>
-        <input type="file" id="file" accept="image/*" class="hide"><button class="ghost" id="pick" style="margin-top:8px">Escolher nova foto</button>
-        <label for="pname">Nome de usuário</label><input id="pname" maxlength="20"><p class="hint" id="nhint"></p>
-        <label for="pstatus">Status</label><input id="pstatus" maxlength="60"><label for="pbio">Bio</label><textarea id="pbio" rows="3" maxlength="200"></textarea>
-        <label for="pbirth">Data de nascimento</label><input id="pbirth" type="date"><p class="hint" id="bhint"></p>
-        <div class="sec">Personalização</div><label>Cor do nome</label><div id="swatches"></div><label for="pcolor">Cor livre</label><input type="color" id="pcolor" value="#8b73ff"><p class="hint" id="chint"></p>
-        <label>Efeito animado</label><div id="fxlist"></div><p class="hint" id="fxhint"></p>
-        <label>Emblemas (até 3)</label><div class="emb" id="emblist"></div><p class="hint" id="embhint"></p>
-        <label>Banner do perfil</label><div class="bprev" id="bprev"></div><input type="file" id="bfile" accept="image/png,image/jpeg,image/webp,image/gif" class="hide">
+
+    <div id="profile" class="hide">
+      <div class="pbox">
+        <div class="top"><div class="av" id="pav" title="Trocar foto" tabindex="0" role="button" aria-label="Trocar foto"></div>
+          <div><h2 id="phead"></h2><div class="hint" id="page"></div></div></div>
+        <input type="file" id="file" accept="image/*" class="hide">
+        <button class="ghost" id="pick" style="margin-top:8px">Escolher nova foto</button>
+        <label for="pname">Nome de usuário</label><input id="pname" maxlength="20">
+        <p class="hint" id="nhint"></p>
+        <label for="pstatus">Status</label><input id="pstatus" maxlength="60" placeholder="O que você está fazendo?">
+        <label for="pbio">Bio</label><textarea id="pbio" rows="3" maxlength="200" placeholder="Fale um pouco sobre você"></textarea>
+        <label for="pbirth">Data de nascimento</label><input id="pbirth" type="date">
+        <p class="hint" id="bhint"></p>
+        <details class="sec"><summary>Nome, efeitos e emblemas</summary>
+        <label>Cor do nome</label>
+        <div id="swatches"></div>
+        <label for="pcolor">Cor livre</label><input type="color" id="pcolor" value="#8b73ff">
+        <p class="hint" id="chint"></p>
+        <label>Efeito animado</label>
+        <div id="fxlist"></div>
+        <p class="hint" id="fxhint"></p>
+        <label>Emblemas (até 3)</label>
+        <div class="emb" id="emblist"></div>
+        <p class="hint" id="embhint"></p>
+        </details>
+        <details class="sec"><summary>Banner e tema</summary>
+        <label>Banner do perfil</label>
+        <div class="bprev" id="bprev"></div>
+        <input type="file" id="bfile" accept="image/png,image/jpeg,image/webp,image/gif" class="hide">
         <div class="row" style="margin-top:8px"><button type="button" class="ghost" id="bpick">Escolher banner</button><button type="button" class="ghost" id="brem">Remover banner</button></div>
-        <label>Tema do perfil</label><div id="tswatches"></div><label for="tcolor">Tema livre</label><input type="color" id="tcolor" value="#3a2a8f"><p class="hint" id="bhint2"></p>
-        <div class="sec">Redes sociais</div><div id="lnklist"></div><p class="hint" id="lnkhint"></p>
-        <div class="sec">Tag de grupo</div><select id="wear"></select><p class="hint">A tag aparece na frente do seu nome. Só vale se o grupo estiver com a tag ativa.</p>
-        <p class="err" id="perr" role="alert"></p><div class="row"><button id="psave">Salvar perfil</button><button id="out" class="ghost">Sair da conta</button></div>
-      </div></div>
+        <label>Tema do perfil</label>
+        <div id="tswatches"></div>
+        <label for="tcolor">Tema livre</label><input type="color" id="tcolor" value="#3a2a8f">
+        <p class="hint" id="bhint2"></p></details>
+        <details class="sec"><summary id="lsum">Redes sociais</summary>
+        <div id="lnklist"></div>
+        <p class="hint" id="lnkhint"></p></details>
+        <div class="sec">Tag de grupo</div>
+        <select id="wear"></select><p class="hint" id="wearh"></p>
+        <p class="err" id="perr" role="alert"></p>
+        <div class="row"><button id="psave">Salvar perfil</button><button id="out" class="ghost">Sair da conta</button></div>
+      </div>
+    </div>
   </main>
 </div>
-<dialog id="gdlg"><h2 style="margin-top:0" id="gtitle">Criar grupo</h2><label for="gname">Nome do grupo</label><input id="gname" maxlength="30"><label for="gdesc">Descrição (opcional)</label><input id="gdesc" maxlength="150"><div id="gtagw" class="hide"><label for="gtag">Tag do grupo (2 a 4 letras ou números)</label><input id="gtag" maxlength="4" placeholder="Ex.: RODA"><p class="hint" id="gtaginfo"></p></div><label class="chk" style="margin-top:14px"><input type="checkbox" id="gpriv"> Grupo privado</label><p class="err" id="gerr" role="alert"></p><div class="row"><button class="ghost" id="gcancel">Cancelar</button><button id="gok">Criar</button></div></dialog>
-<dialog id="jdlg"><h2 style="margin-top:0">Entrar com convite</h2><label for="jcode">Cole o link ou o código</label><input id="jcode"><p class="err" id="jerr" role="alert"></p><div class="row"><button class="ghost" id="jcancel">Cancelar</button><button id="jok">Entrar</button></div></dialog>
-<dialog id="pdlg"><div class="pcard" id="pcard"><div class="ptop" id="pctop"></div><div class="pbody"><div id="pcav"></div><h2 id="pcname"></h2><div class="hint" id="pcstatus"></div><div class="emb hide" id="pcemb"></div><div class="lnks hide" id="pclnk"></div><div class="psec" id="pcbiow"><div class="lbl">Sobre mim</div><p id="pcbio"></p></div><div class="pgrid"><div class="psec"><div class="lbl">Membro desde</div><div id="pcsince"></div></div><div class="psec" id="pcagew"><div class="lbl">Idade</div><div id="pcage"></div></div><div class="psec" id="pcinvw"><div class="lbl">Convidou</div><div id="pcinv"></div></div></div><div class="row"><button id="pcdm"></button><button class="ghost" id="pcfr">Adicionar amigo</button><button class="ghost" id="pcx">Fechar</button></div></div></div></dialog>
-<dialog id="rdlg" style="text-align:center"><p class="hint" style="margin-top:0">Você ganhou</p><div class="rwd-e" id="rwdE"></div><h2 id="rwdN" style="margin:6px 0 2px"></h2><div id="rwdR" style="font-weight:700"></div><div class="row"><button class="ghost" id="rwdClose">Fechar</button><button id="rwdGo">Ver minha coleção</button></div></dialog>
+
+<dialog id="gdlg">
+  <h2 style="margin-top:0" id="gtitle">Criar grupo</h2>
+  <label for="gname">Nome do grupo</label><input id="gname" maxlength="30">
+  <label for="gdesc">Descrição (opcional)</label><input id="gdesc" maxlength="150">
+  <label for="gicon">Ícone (um emoji, opcional)</label><input id="gicon" maxlength="8" placeholder="Ex.: 🎮">
+  <div id="gtagw" class="hide"><label for="gtag">Tag do grupo (2 a 4 letras ou números)</label><input id="gtag" maxlength="4" placeholder="Ex.: RODA"><label for="gtagc">Cor da tag</label><input type="color" id="gtagc" value="#8b73ff"><p class="hint" id="gtaginfo"></p></div>
+  <label class="chk" style="margin-top:14px"><input type="checkbox" id="gpriv"> Grupo privado (só entra com convite ou link)</label>
+  <p class="err" id="gerr" role="alert"></p>
+  <div class="row"><button class="ghost" id="gcancel">Cancelar</button><button id="gok">Criar</button></div>
+</dialog>
+
+<dialog id="jdlg">
+  <h2 style="margin-top:0">Entrar com convite</h2>
+  <label for="jcode">Cole o link ou o código</label><input id="jcode" autocomplete="off">
+  <p class="err" id="jerr" role="alert"></p>
+  <div class="row"><button class="ghost" id="jcancel">Cancelar</button><button id="jok">Entrar</button></div>
+</dialog>
+
+<dialog id="pdlg">
+  <div class="pcard" id="pcard">
+    <div class="ptop" id="pctop"></div>
+    <div class="pbody">
+      <div id="pcav"></div>
+      <h2 id="pcname"></h2>
+      <div class="hint" id="pcstatus"></div>
+      <div class="emb hide" id="pcemb"></div>
+      <div class="lnks hide" id="pclnk"></div>
+      <div class="psec" id="pcbiow"><div class="lbl">Sobre mim</div><p id="pcbio"></p></div>
+      <div class="pgrid">
+        <div class="psec"><div class="lbl">Membro desde</div><div id="pcsince"></div></div>
+        <div class="psec" id="pcagew"><div class="lbl">Idade</div><div id="pcage"></div></div>
+        <div class="psec" id="pcinvw"><div class="lbl">Convidou</div><div id="pcinv"></div></div>
+      </div>
+      <div class="row"><button id="pcdm"></button><button class="ghost" id="pcfr">Adicionar amigo</button><button class="ghost" id="pcx">Fechar</button></div>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="rdlg" style="text-align:center">
+  <p class="hint" style="margin-top:0">Você ganhou</p>
+  <div class="rwd-e" id="rwdE"></div>
+  <h2 id="rwdN" style="margin:6px 0 2px"></h2>
+  <div id="rwdR" style="font-weight:700"></div>
+  <div class="row"><button class="ghost" id="rwdClose">Fechar</button><button id="rwdGo">Ver minha coleção</button></div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
+// Cole aqui a chave PUBLICÁVEL do Supabase (começa com sb_publishable_). NUNCA a secret nem a service_role.
 const SUPABASE_URL = "https://pqmyrtywtgukcdmkzuax.supabase.co";
 const SUPABASE_KEY = "sb_publishable_UA0xjaueCE3NKpn4Nr_B_A_ES_RvK-w";
-(function guard(){let bad=SUPABASE_KEY.startsWith("sb_secret_");try{if(SUPABASE_KEY.startsWith("eyJ")) bad=JSON.parse(atob(SUPABASE_KEY.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).role==="service_role";}catch{}if(bad){document.body.innerHTML="<p style='padding:24px'>Chave secreta detectada.</p>";throw new Error("secret")}} )();
+
+(function guard(){ // trava: se uma chave secreta for colada por engano, o site recusa rodar
+  let bad = SUPABASE_KEY.startsWith("sb_secret_");
+  try{ if(SUPABASE_KEY.startsWith("eyJ")) bad = JSON.parse(atob(SUPABASE_KEY.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).role === "service_role"; }catch{}
+  if(bad){ document.body.innerHTML = "<p style='padding:24px;font-family:sans-serif'>Chave secreta detectada no código. Troque pela chave publicável do Supabase.</p>"; throw new Error("chave secreta no código"); }
+})();
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-let COLS_FULL = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
-let COLS_MIN = "id,username,bio,avatar_url,created_at,accent,status";
-let COLS = COLS_FULL;
-let GCOLS_FULL = "id,name,description,owner_id,created_at,is_private,tag,tag_expires";
-let GCOLS_MIN = "id,name,description,owner_id,created_at,is_private";
-let GCOLS = GCOLS_FULL;
-const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"], founder:["FUNDADOR","#ff9f43"]};
-const PREM = ["admin","founder","donor","vip"], ORDER = ["admin","founder","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
-let me, myProf, signup=false, started=false, ctx={type:"global"}, tok=0, accentSel=null, myBirth=null;
-let gtags={}, replyTo=null, rxMap={}, rec=null;
-let groups=[], myGroups=new Set(), users=[], fr={}, tags={};
-const cache={}, seen=new Set();
-let REF=""; try{REF=(new URLSearchParams(location.search).get("ref")||localStorage.getItem("roda_ref")||"").toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12); if(REF) localStorage.setItem("roda_ref",REF);}catch{}
-const el = (tag, text, cls) => Object.assign(document.createElement(tag), {textContent: text || "", className: cls || ""});
-const toast = t => { const d=$("toast"); d.textContent=t; d.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>d.classList.remove("on"),2800); };
+let COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems,worn_group";
+let GCOLS = "id,name,description,owner_id,created_at,is_private,tag,tag_expires,icon,tag_color";
+const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], founder:["FUNDADOR","#ff9f43"]};
+const PREM = ["admin","founder","vip"], ORDER = ["admin","founder","mod","vip"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
+let me, myProf, signup = false, started = false, ctx = {type:"global"}, tok = 0, accentSel = null, myBirth = null;
+let tagGroups = [], gcol = {};
+let gtags = {}, replyTo = null, rxMap = {}, rec = null;
+let groups = [], myGroups = new Set(), users = [], fr = {}, tags = {};
+const cache = {}, seen = new Set();
+let REF = "";
+try{ REF = (new URLSearchParams(location.search).get("ref") || localStorage.getItem("roda_ref") || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12); if(REF) localStorage.setItem("roda_ref", REF); }catch{}
 
+const el = (tag, text, cls) => Object.assign(document.createElement(tag), {textContent: text || "", className: cls || ""});
+const toast = t => { const d = $("toast"); d.textContent = t; d.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => d.classList.remove("on"), 2800); };
 async function getProf(id){
   if(cache[id]) return cache[id];
-  try{
-    const {data, error} = await sb.from("profiles").select(COLS).eq("id", id).single();
-    if(error) throw error;
-    cache[id]=data; return data;
-  }catch(e){
-    const msg=(e.message||"").toLowerCase();
-    if(msg.includes("worn_group")||msg.includes("emblems")||msg.includes("theme")||msg.includes("effect")||msg.includes("banner")){
-      try{
-        const {data} = await sb.from("profiles").select(COLS_MIN).eq("id", id).single();
-        if(data){ cache[id]=data; COLS=COLS_MIN; console.warn("Usando COLS_MIN por compatibilidade"); return data; }
-      }catch{}
-    }
-    console.warn("getProf fallback", id, e.message);
-    return cache[id]={id, username:"?", accent:null, effect:null, bio:"", avatar_url:null, created_at:new Date().toISOString()};
-  }
+  const {data} = await sb.from("profiles").select(COLS).eq("id", id).single();
+  return cache[id] = data || {id, username:"?"};
 }
 function avatar(p){
-  const d=el("div","", "av"+(p.effect==="ring"?" fx-ring":""));
-  if(p.avatar_url){const i=document.createElement("img"); i.src=p.avatar_url; i.alt=""; d.append(i)}
-  else d.textContent=(p.username||"?")[0].toUpperCase(); return d;
+  const d = el("div", "", "av" + (p.effect === "ring" ? " fx-ring" : ""));
+  if(p.avatar_url){const i = document.createElement("img"); i.src = p.avatar_url; i.alt = ""; d.append(i)}
+  else d.textContent = (p.username || "?")[0].toUpperCase();
+  return d;
 }
-function nameEl(p){
-  const w=el("span","", "nm"), s=el("strong", p.username||"?");
-  if(gtags[p.id]) w.append(el("span", gtags[p.id], "gtg"));
-  if(/^#[0-9a-f]{6}$/i.test(p.accent||"")) s.style.color=p.accent;
-  if(p.effect==="gradient"||p.effect==="glow") s.classList.add("fx-"+p.effect);
+function nameEl(p, full){
+  const w = el("span", "", "nm"), s = el("strong", p.username);
+  if(gtags[p.id]){ const g = el("span", gtags[p.id], "gtg"); if(/^#[0-9a-f]{6}$/i.test(gcol[p.id] || "")) g.style.color = gcol[p.id]; w.append(g); }
+  if(/^#[0-9a-f]{6}$/i.test(p.accent || "")) s.style.color = p.accent;
+  if(p.effect === "gradient" || p.effect === "glow") s.classList.add("fx-" + p.effect);
   w.append(s);
-  (tags[p.id]||[]).filter(t=>TAGS[t]).forEach(t=>{const x=el("span",TAGS[t][0],"tag"); x.style.color=TAGS[t][1]; w.append(x);});
+  const rl = (tags[p.id] || []).filter(t => TAGS[t]); (full ? rl : rl.slice(0, 1)).forEach(t => { const x = el("span", TAGS[t][0], "tag"); x.style.color = TAGS[t][1]; w.append(x); });
   return w;
 }
-function clickName(p){ const n=nameEl(p); n.style.cursor="pointer"; n.onclick=()=>showProfile(p); return n; }
+function clickName(p){ const n = nameEl(p); n.style.cursor = "pointer"; n.onclick = () => showProfile(p); return n; }
 async function loadTags(){
-  try{
-    const {data, error} = await sb.from("user_tags").select("*");
-    if(error) throw error;
-    tags={}; (data||[]).forEach(t=>(tags[t.user_id]||=[]).push(t.tag));
-    for(const k in tags) tags[k].sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b));
-  }catch(e){ console.warn("user_tags falhou", e.message); tags={} }
-  try{
-    const wt=await sb.rpc("worn_tags"); gtags={};
-    (wt.data||[]).forEach(x=>gtags[x.user_id]=x.tag);
-  }catch(e){ console.warn("worn_tags falhou - usando vazio", e.message); gtags={} }
+  const {data} = await sb.from("user_tags").select("*"); tags = {};
+  (data || []).forEach(t => (tags[t.user_id] ||= []).push(t.tag));
+  for(const k in tags) tags[k].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  let wt = await sb.rpc("worn_tags2"); if(wt.error) wt = await sb.rpc("worn_tags");
+  gtags = {}; gcol = {}; (wt.data || []).forEach(x => { gtags[x.user_id] = x.tag; if(x.color) gcol[x.user_id] = x.color; });
 }
-const hasTag = (...l) => (tags[me.id]||[]).some(t=>l.includes(t));
-const isPrem = id => (tags[id]||[]).some(t=>PREM.includes(t));
+const hasTag = (...l) => (tags[me.id] || []).some(t => l.includes(t));
+const isPrem = id => (tags[id] || []).some(t => PREM.includes(t));
 const closeSide = () => $("side").classList.remove("open");
-function show(v){ $("chat").classList.toggle("hide", v!=="chat"); $("profile").classList.toggle("hide", v!=="profile"); }
-function mark(btn){ document.querySelectorAll(".nav").forEach(x=>x.removeAttribute("aria-current")); if(btn) btn.setAttribute("aria-current","true"); }
-const act = (text, label, fn) => { const b=el("button", text, "mini ghost"); b.type="button"; b.title=b.ariaLabel=label; b.onclick=fn; return b; };
+function show(v){ $("chat").classList.toggle("hide", v !== "chat"); $("profile").classList.toggle("hide", v !== "profile"); }
+function mark(btn){ document.querySelectorAll(".nav").forEach(x => x.removeAttribute("aria-current")); if(btn) btn.setAttribute("aria-current","true"); }
+const act = (text, label, fn) => { const b = el("button", text, "mini ghost"); b.type = "button"; b.title = b.ariaLabel = label; b.onclick = fn; return b; };
 function navRow(p, onClick, ...btns){
-  const r=el("div","", "rw"), b=el("button","", "nav"); b.type="button";
-  b.append(avatar(p), el("span", p.username)); b.onclick=()=>onClick(b); r.append(b, ...btns); return r;
+  const r = el("div", "", "rw"), b = el("button", "", "nav"); b.type = "button";
+  b.append(avatar(p), el("span", p.username)); b.onclick = () => onClick(b); r.append(b, ...btns); return r;
 }
-$("swap").onclick=()=>{signup=!signup; $("username").classList.toggle("hide",!signup); $("go").textContent=signup?"Criar conta":"Entrar"; $("swap").textContent=signup?"Já tenho conta":"Criar uma conta"; $("autherr").textContent="";};
-$("go").onclick=async()=>{
-  const email=$("email").value.trim(), password=$("pass").value, username=$("username").value.trim();
-  $("autherr").textContent="";
-  if(signup && !/^[A-Za-z0-9_]{3,20}$/.test(username)) return $("autherr").textContent="Use de 3 a 20 letras, números ou _";
-  const r=signup?await sb.auth.signUp({email,password,options:{data:{username, ref:REF}}}):await sb.auth.signInWithPassword({email,password});
-  if(r.error) return $("autherr").textContent=signup?"Nome ou e-mail já em uso.":"E-mail ou senha incorretos.";
-  if(signup && !r.data.session) $("autherr").textContent="Conta criada! Confirme seu e-mail.";
-};
-$("out").onclick=()=>sb.auth.signOut();
-sb.auth.onAuthStateChange((_e,s)=>{if(s){me=s.user; start()} else if(started){location.reload()}});
-async function start(){
-  if(started) return; started=true;
-  $("auth").classList.add("hide"); $("app").classList.remove("hide");
-  try{ myProf=await getProf(me.id); }catch(e){ myProf={id:me.id, username:"?"} }
-  await loadTags(); drawMe();
-  try{ await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly(), loadItems()]); }catch(e){ console.warn("load inicial falhou", e) }
-  const inv=new URLSearchParams(location.search).get("convite");
-  if(!(inv && await useInvite(inv.toLowerCase()))) openGlobal();
-  const rt = (table, match) => sb.channel(table).on("postgres_changes",{event:"INSERT",schema:"public",table}, e=>{ if(match(e.new)) addMsg(e.new, table) }).subscribe();
-  rt("messages", ()=>ctx.type==="global");
-  rt("group_messages", m=>ctx.type==="group" && m.group_id===ctx.id);
-  rt("dms", m=>ctx.type==="dm" && (m.sender_id===ctx.id || m.receiver_id===ctx.id));
-  rt("announcements", ()=>ctx.type==="news");
-  ["messages","group_messages","dms"].forEach(t=>sb.channel("del_"+t).on("postgres_changes",{event:"DELETE",schema:"public",table:t}, e=>{ if(e.old && e.old.id!=null) removeMsg(t, e.old.id); }).subscribe());
-  const ping=()=>sb.rpc("touch_seen"); ping(); setInterval(ping,60000);
-  sb.channel("rx").on("postgres_changes",{event:"*",schema:"public",table:"message_reactions"}, e=>{ const r=e.new?.msg_id?e.new:e.old; if(r?.msg_id) drawRx(r.msg_table, r.msg_id); }).subscribe();
-  setInterval(async()=>{ await loadTags(); await loadFriends(); drawUsers(); },30000);
-}
-function drawMe(){ const b=$("meBtn"); b.innerHTML=""; const w=el("div"); w.append(nameEl(myProf), el("div","Editar perfil","hint")); b.append(avatar(myProf), w); }
 
+// ---------- login ----------
+$("swap").onclick = () => {
+  signup = !signup;
+  $("username").classList.toggle("hide", !signup);
+  $("go").textContent = signup ? "Criar conta" : "Entrar";
+  $("swap").textContent = signup ? "Já tenho conta" : "Criar uma conta";
+  $("autherr").textContent = "";
+};
+$("go").onclick = async () => {
+  const email = $("email").value.trim(), password = $("pass").value, username = $("username").value.trim();
+  $("autherr").textContent = "";
+  if(signup && !/^[A-Za-z0-9_]{3,20}$/.test(username)) return $("autherr").textContent = "Use de 3 a 20 letras, números ou _ no nome de usuário.";
+  const r = signup ? await sb.auth.signUp({email, password, options:{data:{username, ref: REF}}})
+                   : await sb.auth.signInWithPassword({email, password});
+  if(r.error) return $("autherr").textContent = signup ? "Não foi possível criar a conta. O nome de usuário ou e-mail pode já estar em uso." : "E-mail ou senha incorretos.";
+  if(signup && !r.data.session) $("autherr").textContent = "Conta criada! Confirme seu e-mail e depois entre.";
+};
+$("out").onclick = () => sb.auth.signOut();
+sb.auth.onAuthStateChange((_e, s) => { if(s){me = s.user; start()} else if(started){location.reload()} });
+
+async function start(){
+  if(started) return; started = true;
+  $("auth").classList.add("hide"); $("app").classList.remove("hide");
+  // se o SQL novo ainda não foi rodado, o site continua funcionando sem os recursos novos
+  if((await sb.from("profiles").select("worn_group").limit(1)).error) COLS = COLS.replace(",worn_group", "");
+  if((await sb.from("groups").select("tag,tag_expires").limit(1)).error) GCOLS = GCOLS.replace(",tag,tag_expires", "");
+  if((await sb.from("groups").select("icon,tag_color").limit(1)).error) GCOLS = GCOLS.replace(",icon,tag_color", "");
+  myProf = await getProf(me.id); await loadTags(); drawMe();
+  await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly(), loadItems()]);
+  const inv = new URLSearchParams(location.search).get("convite");
+  if(!(inv && await useInvite(inv.toLowerCase()))) openGlobal();
+  const rt = (table, match) => sb.channel(table).on("postgres_changes",{event:"INSERT",schema:"public",table}, e => { if(match(e.new)) addMsg(e.new, table) }).subscribe();
+  rt("messages", () => ctx.type === "global");
+  rt("group_messages", m => ctx.type === "group" && m.group_id === ctx.id);
+  rt("dms", m => ctx.type === "dm" && (m.sender_id === ctx.id || m.receiver_id === ctx.id));
+  rt("announcements", () => ctx.type === "news");
+  const ping = () => sb.rpc("touch_seen"); ping(); setInterval(ping, 60000);
+  sb.channel("rx").on("postgres_changes",{event:"*",schema:"public",table:"message_reactions"}, e => { const r = e.new?.msg_id ? e.new : e.old; if(r?.msg_id) drawRx(r.msg_table, r.msg_id); }).subscribe();
+  setInterval(async () => { await loadTags(); await loadFriends(); drawUsers(); }, 30000);
+}
+function drawMe(){
+  const b = $("meBtn"); b.innerHTML = ""; const w = el("div");
+  w.append(nameEl(myProf), el("div", "Editar perfil", "hint")); b.append(avatar(myProf), w);
+}
+
+// ---------- mensagens ----------
 async function addMsg(m, table){
-  const key=table+m.id; if(seen.has(key)) return; seen.add(key);
-  if(table==="announcements"){
-    const row=el("div","", "msg"), b=el("div","", "b"), h=el("div"), t=el("span","OFICIAL","tag"); t.style.color="#8b73ff";
-    h.append(el("strong","Roda"), t, el("small", new Date(m.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})));
-    b.append(h, el("p", m.content)); row.append(el("div","R","av"), b);
-    const f=$("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop=f.scrollHeight; return;
+  const key = table + m.id; if(seen.has(key)) return; seen.add(key);
+  if(table === "announcements"){
+    const row = el("div", "", "msg"), b = el("div", "", "b"), h = el("div"), t = el("span", "OFICIAL", "tag"); t.style.color = "#8b73ff";
+    h.append(el("strong", "Roda"), t, el("small", new Date(m.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})));
+    b.append(h, el("p", m.content)); row.append(el("div", "R", "av"), b);
+    const f = $("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop = f.scrollHeight; return;
   }
-  const p=await getProf(m.sender_id||m.user_id);
-  const row=el("div","", "msg"+(p.id===me.id?" me":"")), b=el("div","", "b"), h=el("div");
-  const nm=nameEl(p), av=avatar(p); nm.onclick=av.onclick=()=>showProfile(p); nm.style.cursor=av.style.cursor="pointer";
+  const p = await getProf(m.sender_id || m.user_id);
+  const row = el("div", "", "msg" + (p.id === me.id ? " me" : "")), b = el("div", "", "b"), h = el("div");
+  const nm = nameEl(p), av = avatar(p); nm.onclick = av.onclick = () => showProfile(p); nm.style.cursor = av.style.cursor = "pointer";
   h.append(nm, el("small", new Date(m.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})));
-  const id=String(m.id), act=el("span","", "act2");
-  const rb=el("button","↩"); rb.type="button"; rb.title="Responder"; rb.onclick=()=>setReply(p.username, m.content);
-  const eb=el("button","😊"); eb.type="button"; eb.title="Reagir"; eb.onclick=()=>pickRx(table, id, eb);
-  act.append(rb, eb);
-  const mineMsg=p.id===me.id;
-  if(mineMsg || (table==="messages" && hasTag("admin"))){
-    const db=el("button","🗑"); db.type="button"; db.title="Apagar"; db.onclick=()=>delMsg(table, m, mineMsg); act.append(db);
-  }
-  row.dataset.k=key; h.append(act); b.append(h);
+  const id = String(m.id), act = el("span", "", "act2");
+  const rb = el("button", "↩"); rb.type = "button"; rb.title = "Responder"; rb.onclick = () => setReply(p.username, m.content);
+  const eb = el("button", "😊"); eb.type = "button"; eb.title = "Reagir"; eb.onclick = () => pickRx(table, id, eb);
+  act.append(rb, eb); h.append(act); b.append(h);
   if(m.reply_text) b.append(el("div", m.reply_text, "quote"));
-  const mu=m.media_url||"";
-  if(mu.startsWith(SUPABASE_URL+"/storage/v1/object/public/chat-media/") && m.media_kind==="image"){ const i=document.createElement("img"); i.src=mu; i.alt="Foto"; i.className="m"; i.loading="lazy"; b.append(i); }
-  else if(mu.startsWith(SUPABASE_URL+"/storage/v1/object/public/chat-media/") && m.media_kind==="audio"){ const a=document.createElement("audio"); a.src=mu; a.controls=true; a.preload="none"; b.append(a); }
-  else b.append(el("p", m.content||""));
-  const rx=el("div","", "rx"); rxMap[table+id]=rx; b.append(rx); drawRx(table, id);
+  const mu = m.media_url || "";
+  if(mu.startsWith(SUPABASE_URL + "/storage/v1/object/public/chat-media/") && m.media_kind === "image"){ const i = document.createElement("img"); i.src = mu; i.alt = "Foto"; i.className = "m"; i.loading = "lazy"; b.append(i); }
+  else if(mu.startsWith(SUPABASE_URL + "/storage/v1/object/public/chat-media/") && m.media_kind === "audio"){ const a = document.createElement("audio"); a.src = mu; a.controls = true; a.preload = "none"; b.append(a); }
+  else b.append(el("p", m.content));
+  const rx = el("div", "", "rx"); rxMap[table + id] = rx; b.append(rx); drawRx(table, id);
   row.append(av, b);
-  const f=$("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop=f.scrollHeight;
-}
-async function delMsg(table, m, mineMsg){
-  if(!confirm("Apagar esta mensagem?")) return;
-  let ok=false;
-  try{
-    if(table==="messages" && !mineMsg){
-      try{ const r=await sb.rpc("admin_delete_message", {mid: m.id}); ok=!r.error; if(!ok) throw r.error; }
-      catch(e){ console.warn("admin_delete_message falhou, tentando delete direto", e.message); const r=await sb.from(table).delete().eq("id", m.id).select("id"); ok=!r.error && r.data && r.data.length>0; }
-    }else{
-      const r=await sb.from(table).delete().eq("id", m.id).select("id"); ok=!r.error && r.data && r.data.length>0;
-    }
-  }catch(e){ ok=false; console.warn("delMsg erro", e) }
-  if(!ok) return toast("Não foi possível apagar. Verifique as policies de DELETE no Supabase.");
-  removeMsg(table, m.id);
-}
-function removeMsg(table, id){
-  const k=table+id; seen.delete(k); delete rxMap[k];
-  const r=$("feed").querySelector(`[data-k="${k}"]`); if(r) r.remove();
-  if(!$("feed").querySelector(".msg") && !$("feed").querySelector(".empty")) $("feed").append(el("div","Ainda não tem mensagens.","empty"));
+  const f = $("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop = f.scrollHeight;
 }
 async function drawRx(table, id){
-  const box=rxMap[table+id]; if(!box) return;
+  const box = rxMap[table + id]; if(!box) return;
   const {data} = await sb.from("message_reactions").select("emoji,user_id").eq("msg_table", table).eq("msg_id", id);
-  const c={}; (data||[]).forEach(r=>{ (c[r.emoji]||=[]).push(r.user_id); }); box.innerHTML="";
-  Object.entries(c).forEach(([e,u])=>{ const mine=u.includes(me.id), b=el("button", e+" "+u.length, mine?"on":""); b.type="button"; b.onclick=()=>toggleRx(table, id, e, mine); box.append(b); });
+  const c = {}; (data || []).forEach(r => { (c[r.emoji] ||= []).push(r.user_id); }); box.innerHTML = "";
+  Object.entries(c).forEach(([e, u]) => { const mine = u.includes(me.id), b = el("button", e + " " + u.length, mine ? "on" : ""); b.type = "button"; b.onclick = () => toggleRx(table, id, e, mine); box.append(b); });
 }
 async function toggleRx(table, id, emoji, mine){
-  const q=sb.from("message_reactions");
-  const r=mine?await q.delete().eq("msg_table", table).eq("msg_id", id).eq("user_id", me.id).eq("emoji", emoji):await q.insert({msg_table: table, msg_id: id, user_id: me.id, emoji});
+  const q = sb.from("message_reactions");
+  const r = mine ? await q.delete().eq("msg_table", table).eq("msg_id", id).eq("user_id", me.id).eq("emoji", emoji) : await q.insert({msg_table: table, msg_id: id, user_id: me.id, emoji});
   if(r.error) toast("Não foi possível reagir."); drawRx(table, id);
 }
 function pickRx(table, id, anchor){
-  const old=document.getElementById("rxpick"); if(old) old.remove();
-  const box=el("div","", "rx"); box.id="rxpick";
-  ["👍","❤","😂","😮","😢","🔥"].forEach(e=>{ const b=el("button", e); b.type="button"; b.onclick=()=>{ box.remove(); toggleRx(table, id, e, false); }; box.append(b); });
+  const old = document.getElementById("rxpick"); if(old) old.remove();
+  const box = el("div", "", "rx"); box.id = "rxpick";
+  ["👍","❤️","😂","😮","😢","🔥"].forEach(e => { const b = el("button", e); b.type = "button"; b.onclick = () => { box.remove(); toggleRx(table, id, e, false); }; box.append(b); });
   anchor.closest(".b").append(box);
 }
-function setReply(name, text){ replyTo=name+": "+(text||"").slice(0,80); $("rtxt").textContent="Respondendo a "+replyTo; $("rbar").classList.remove("hide"); $("inp").focus(); }
-$("rx_x").onclick=()=>{ replyTo=null; $("rbar").classList.add("hide"); };
+function setReply(name, text){ replyTo = name + ": " + (text || "").slice(0, 80); $("rtxt").textContent = "Respondendo a " + replyTo; $("rbar").classList.remove("hide"); $("inp").focus(); }
+$("rx_x").onclick = () => { replyTo = null; $("rbar").classList.add("hide"); };
+function vipCard(){
+  const d = el("div", "", "vip"), ul = el("ul"), how = el("p", VIP_HOW, "hint"); how.classList.add("hide");
+  d.append(el("h3", "Seja " + PLUS), el("div", VIP_PRICE, "pr"));
+  VIP_PERKS.forEach(([t, x]) => { const li = el("li"); li.append(el("b", t), el("span", x)); ul.append(li); });
+  const b = el("button", "Quero ser VIP"); b.type = "button"; b.onclick = () => how.classList.toggle("hide");
+  d.append(ul, b, how); return d;
+}
 async function openCtx(c, title, sub, btn){
-  const t=++tok; ctx=c; seen.clear(); rxMap={}; replyTo=null; $("rbar").classList.add("hide");
-  const mediaOk=c.type==="dm"||c.type==="group"; $("attach").classList.toggle("hide",!mediaOk); $("mic").classList.toggle("hide",!mediaOk||!window.MediaRecorder); show("chat"); mark(btn); closeSide();
-  $("title").replaceChildren(title instanceof Node?title:document.createTextNode(title));
-  $("sub").textContent=sub||""; $("feed").innerHTML="";
-  const isG=c.type==="group", member=!isG||myGroups.has(c.id), priv=isG&&c.g.is_private;
-  $("form").classList.toggle("hide",!member||c.type==="news"); $("join").classList.toggle("hide",member);
-  const owner=isG&&c.g.owner_id===me.id; $("leave").classList.toggle("hide",!(isG&&member)||owner); $("gedit").classList.toggle("hide",!owner); $("gdel").classList.toggle("hide",!owner);
-  $("invite").classList.toggle("hide",!(priv&&member)); $("reset").classList.toggle("hide",!(priv&&member&&c.g.owner_id===me.id));
-  $("more").classList.toggle("hide",!isG);
-  if(!member) return $("feed").append(el("div","Entre no grupo para ver e enviar mensagens.","empty"));
+  const t = ++tok; ctx = c; seen.clear(); rxMap = {}; replyTo = null; $("rbar").classList.add("hide");
+  const mediaOk = c.type === "dm" || c.type === "group"; $("attach").classList.toggle("hide", !mediaOk); $("mic").classList.toggle("hide", !mediaOk || !window.MediaRecorder); show("chat"); mark(btn); closeSide();
+  $("title").replaceChildren(title instanceof Node ? title : document.createTextNode(title));
+  $("sub").textContent = sub || ""; $("feed").innerHTML = ""; if(c.type === "news") $("feed").append(vipCard());
+  const isG = c.type === "group", member = !isG || myGroups.has(c.id), priv = isG && c.g.is_private;
+  $("form").classList.toggle("hide", !member || c.type === "news");
+  $("join").classList.toggle("hide", member);
+  const owner = isG && c.g.owner_id === me.id, canEdit = isG && (owner || hasTag("admin"));
+  $("leave").classList.toggle("hide", !(isG && member) || owner);
+  $("gedit").classList.toggle("hide", !canEdit);
+  $("gdel").classList.toggle("hide", !canEdit);
+  $("invite").classList.toggle("hide", !(priv && member));
+  $("reset").classList.toggle("hide", !(priv && member && c.g.owner_id === me.id));
+  if(!member) return $("feed").append(el("div", "Entre no grupo para ver e enviar mensagens.", "empty"));
   let q, table;
-  if(c.type==="global"){table="messages"; q=sb.from(table).select("*")}
-  else if(c.type==="news"){table="announcements"; q=sb.from(table).select("*")}
-  else if(isG){table="group_messages"; q=sb.from(table).select("*").eq("group_id", c.id)}
-  else {table="dms"; q=sb.from(table).select("*").or(`and(sender_id.eq.${me.id},receiver_id.eq.${c.id}),and(sender_id.eq.${c.id},receiver_id.eq.${me.id})`)}
+  if(c.type === "global"){table = "messages"; q = sb.from(table).select("*")}
+  else if(c.type === "news"){table = "announcements"; q = sb.from(table).select("*")}
+  else if(isG){table = "group_messages"; q = sb.from(table).select("*").eq("group_id", c.id)}
+  else {table = "dms"; q = sb.from(table).select("*").or(`and(sender_id.eq.${me.id},receiver_id.eq.${c.id}),and(sender_id.eq.${c.id},receiver_id.eq.${me.id})`)}
   const {data} = await q.order("created_at",{ascending:false}).limit(60);
-  if(t!==tok) return;
-  if(!data||!data.length) $("feed").append(el("div", c.type==="news"?"Nenhum anúncio ainda.":"Ainda não tem mensagens. Que tal começar a conversa?","empty"));
-  for(const m of (data||[]).reverse()){ if(t!==tok) return; await addMsg(m, table); }
+  if(t !== tok) return;
+  if(!data || !data.length) $("feed").append(el("div", c.type === "news" ? "Nenhum anúncio ainda." : "Ainda não tem mensagens. Que tal começar a conversa?", "empty"));
+  for(const m of (data || []).reverse()){ if(t !== tok) return; await addMsg(m, table); }
 }
 function openGlobal(){ openCtx({type:"global"}, "# Chat global", "todo mundo conversa aqui", $("nGlobal")); }
 async function openDm(p, btn){
   const [{data: age}, {data: ls}] = await Promise.all([sb.rpc("age_of", {p: p.id}), sb.from("profiles").select("last_seen").eq("id", p.id).single()]);
-  const t=ls&&ls.last_seen?new Date(ls.last_seen):null, on=t&&Date.now()-t<120000;
-  const seenTxt=on?"🟢 online":t?"visto por último "+t.toLocaleString("pt-BR",{day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"}):"";
-  openCtx({type:"dm", id: p.id}, clickName(p), [seenTxt, age?age+" anos":"", p.status||p.bio||""].filter(Boolean).join(" · "), btn);
+  const t = ls && ls.last_seen ? new Date(ls.last_seen) : null, on = t && Date.now() - t < 120000;
+  const seenTxt = on ? "🟢 online" : t ? "visto por último " + t.toLocaleString("pt-BR", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"}) : "";
+  openCtx({type:"dm", id: p.id}, clickName(p), [seenTxt, age ? age + " anos" : "", p.status || p.bio || ""].filter(Boolean).join(" · "), btn);
 }
-$("nGlobal").onclick=openGlobal;
-$("nNews").onclick=()=>openCtx({type:"news"}, "📢 Anúncios", "avisos oficiais da Roda (só leitura)", $("nNews"));
-$("menu").onclick=()=>$("side").classList.add("open");
-$("more").onclick=e=>{ e.stopPropagation(); $("gact").classList.toggle("open"); };
-document.addEventListener("click", ()=>$("gact").classList.remove("open"));
-$("form").onsubmit=async e=>{
-  e.preventDefault(); const content=$("inp").value.trim(); if(!content) return; $("inp").value="";
-  const r=await sendMsg({content, reply_text: replyTo, media_url: null, media_kind: null});
-  if(r.error) $("inp").value=content; else { replyTo=null; $("rbar").classList.add("hide"); }
+$("nGlobal").onclick = openGlobal;
+$("nNews").onclick = () => openCtx({type:"news"}, "📢 Anúncios", "avisos oficiais da Roda (só leitura)", $("nNews"));
+$("menu").onclick = () => $("side").classList.add("open");
+$("form").onsubmit = async e => {
+  e.preventDefault(); const content = $("inp").value.trim(); if(!content) return; $("inp").value = "";
+  let r;
+  r = await sendMsg({content, reply_text: replyTo});
+  if(r.error) $("inp").value = content; else { replyTo = null; $("rbar").classList.add("hide"); }
 };
 function sendMsg(x){
-  const clean = Object.fromEntries(Object.entries(x).filter(([_,v])=>v!=null));
-  if(ctx.type==="global") return sb.from("messages").insert({user_id: me.id, ...clean});
-  if(ctx.type==="group") return sb.from("group_messages").insert({group_id: ctx.id, user_id: me.id, ...clean});
-  return sb.from("dms").insert({sender_id: me.id, receiver_id: ctx.id, ...clean});
+  x = Object.fromEntries(Object.entries(x).filter(([, v]) => v !== null && v !== undefined));
+  if(ctx.type === "global") return sb.from("messages").insert({user_id: me.id, ...x});
+  if(ctx.type === "group") return sb.from("group_messages").insert({group_id: ctx.id, user_id: me.id, ...x});
+  return sb.from("dms").insert({sender_id: me.id, receiver_id: ctx.id, ...x});
 }
 async function sendMedia(blob, ext, kind){
-  const path=`${me.id}/${Date.now()}.${ext}`;
-  const up=await sb.storage.from("chat-media").upload(path, blob, {contentType: blob.type});
+  const path = `${me.id}/${Date.now()}.${ext}`;
+  const up = await sb.storage.from("chat-media").upload(path, blob, {contentType: blob.type});
   if(up.error) return toast("Não foi possível enviar (máximo 5 MB).");
-  const url=sb.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
-  const r=await sendMsg({content: kind==="image"?"📷 Foto":"🎤 Áudio", media_url: url, media_kind: kind, reply_text: replyTo});
-  if(r.error) toast("Não foi possível enviar."); else { replyTo=null; $("rbar").classList.add("hide"); }
+  const url = sb.storage.from("chat-media").getPublicUrl(path).data.publicUrl;
+  const r = await sendMsg({content: kind === "image" ? "📷 Foto" : "🎤 Áudio", media_url: url, media_kind: kind, reply_text: replyTo});
+  if(r.error) toast("Não foi possível enviar."); else { replyTo = null; $("rbar").classList.add("hide"); }
 }
-$("attach").onclick=()=>$("mfile").click();
-$("mfile").onchange=async()=>{ const f=$("mfile").files[0]; $("mfile").value=""; if(!f) return;
-  const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[f.type];
-  if(!ext||f.size>5e6) return toast("Use PNG, JPG, WEBP ou GIF de até 5 MB."); sendMedia(f, ext, "image"); };
-$("mic").onclick=async()=>{
+$("attach").onclick = () => $("mfile").click();
+$("mfile").onchange = async () => { const f = $("mfile").files[0]; $("mfile").value = ""; if(!f) return;
+  const ext = {"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[f.type];
+  if(!ext || f.size > 5e6) return toast("Use PNG, JPG, WEBP ou GIF de até 5 MB."); sendMedia(f, ext, "image"); };
+$("mic").onclick = async () => {
   if(rec){ rec.stop(); return; }
   try{
-    const st=await navigator.mediaDevices.getUserMedia({audio:true}), chunks=[];
-    rec=new MediaRecorder(st); $("mic").textContent="⏹"; const tm=setTimeout(()=>rec&&rec.stop(),60000);
-    rec.ondataavailable=e=>chunks.push(e.data);
-    rec.onstop=()=>{ clearTimeout(tm); st.getTracks().forEach(t=>t.stop()); const type=(rec.mimeType||"audio/webm").split(";")[0]; rec=null; $("mic").textContent="🎤";
-      const ext=type.includes("mp4")?"m4a":type.includes("ogg")?"ogg":"webm"; const blob=new Blob(chunks,{type}); if(blob.size>5e6) return toast("Áudio muito grande."); sendMedia(blob, ext, "audio"); };
+    const st = await navigator.mediaDevices.getUserMedia({audio: true}), chunks = [];
+    rec = new MediaRecorder(st); $("mic").textContent = "⏹"; const tm = setTimeout(() => rec && rec.stop(), 60000);
+    rec.ondataavailable = e => chunks.push(e.data);
+    rec.onstop = () => { clearTimeout(tm); st.getTracks().forEach(t => t.stop()); const type = (rec.mimeType || "audio/webm").split(";")[0]; rec = null; $("mic").textContent = "🎤";
+      const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm"; const blob = new Blob(chunks, {type}); if(blob.size > 5e6) return toast("Áudio muito grande."); sendMedia(blob, ext, "audio"); };
     rec.start(); toast("Gravando... toque em ⏹ para enviar (até 60 s).");
   }catch{ toast("Não foi possível usar o microfone."); }
 };
+
+// ---------- pessoas e amigos ----------
 async function loadUsers(q){
-  try{
-    let req=sb.from("profiles").select(COLS).neq("id", me.id).order("created_at",{ascending:false}).limit(40);
-    if(q) req=req.ilike("username","%"+q+"%");
-    const {data, error}=await req; if(error) throw error;
-    users=data||[]; users.forEach(p=>cache[p.id]=p); drawUsers();
-  }catch(e){
-    console.warn("loadUsers com COLS falhou, tentando MIN", e.message);
-    try{ let req=sb.from("profiles").select(COLS_MIN).neq("id", me.id).limit(40); if(q) req=req.ilike("username","%"+q+"%"); const {data}=await req; users=data||[]; users.forEach(p=>cache[p.id]=p); drawUsers(); }catch{}
-  }
+  let req = sb.from("profiles").select(COLS).neq("id", me.id).order("created_at",{ascending:false}).limit(40);
+  if(q) req = req.ilike("username", "%" + q + "%");
+  const {data} = await req; users = data || []; users.forEach(p => cache[p.id] = p); drawUsers();
 }
 function drawUsers(){
-  const box=$("ulist"); box.innerHTML="";
-  users.forEach(p=>{
-    const f=fr[p.id], extra=[act("👤","Ver perfil",()=>showProfile(p))];
-    if(!f) extra.push(act("+","Adicionar aos amigos",()=>addFriend(p.id)));
-    else if(f.status==="pending") extra.push(el("small", f.incoming?"pediu":"enviado","hint"));
-    box.append(navRow(p, b=>openDm(p, b), ...extra));
+  const box = $("ulist"); box.innerHTML = "";
+  users.forEach(p => {
+    const f = fr[p.id], extra = [act("👤", "Ver perfil", () => showProfile(p))];
+    if(!f) extra.push(act("+", "Adicionar aos amigos", () => addFriend(p.id)));
+    else if(f.status === "pending") extra.push(el("small", f.incoming ? "pediu" : "enviado", "hint"));
+    box.append(navRow(p, b => openDm(p, b), ...extra));
   });
 }
-let st; $("search").oninput=e=>{ clearTimeout(st); st=setTimeout(()=>loadUsers(e.target.value.trim()),250); };
+let st; $("search").oninput = e => { clearTimeout(st); st = setTimeout(() => loadUsers(e.target.value.trim()), 250); };
 async function loadFriends(){
-  try{
-    const {data}=await sb.from("friendships").select("*"); fr={};
-    (data||[]).forEach(f=>{ const o=f.requester_id===me.id?f.addressee_id:f.requester_id; fr[o]={id:f.id, status:f.status, incoming:f.addressee_id===me.id}; });
-    await Promise.all(Object.keys(fr).map(getProf)); drawFriends();
-  }catch(e){ console.warn("loadFriends falhou", e.message) }
+  const {data} = await sb.from("friendships").select("*"); fr = {};
+  (data || []).forEach(f => { const o = f.requester_id === me.id ? f.addressee_id : f.requester_id;
+    fr[o] = {id: f.id, status: f.status, incoming: f.addressee_id === me.id}; });
+  await Promise.all(Object.keys(fr).map(getProf)); drawFriends();
 }
 function drawFriends(){
-  const box=$("flist"), ids=Object.keys(fr); box.innerHTML="";
-  const inc=ids.filter(i=>fr[i].status==="pending"&&fr[i].incoming), ok=ids.filter(i=>fr[i].status==="accepted");
-  if(!inc.length&&!ok.length) return box.append(el("div","Adicione pessoas com o + na lista de Pessoas.","hint"));
-  inc.forEach(i=>box.append(navRow(cache[i]||{username:"?"}, b=>openDm(cache[i], b), act("✓","Aceitar",()=>friendOp(i,"accept")), act("✗","Recusar",()=>friendOp(i,"remove")))));
-  ok.forEach(i=>box.append(navRow(cache[i]||{username:"?"}, b=>openDm(cache[i], b), act("👤","Ver perfil",()=>showProfile(cache[i])), act("×","Desfazer",()=>{ if(confirm("Desfazer amizade com "+(cache[i]?.username||"?")+"?")) friendOp(i,"remove"); }))));
+  const box = $("flist"), ids = Object.keys(fr); box.innerHTML = "";
+  const inc = ids.filter(i => fr[i].status === "pending" && fr[i].incoming), ok = ids.filter(i => fr[i].status === "accepted");
+  if(!inc.length && !ok.length) return box.append(el("div", "Adicione pessoas com o + na lista de Pessoas.", "hint"));
+  inc.forEach(i => box.append(navRow(cache[i], b => openDm(cache[i], b),
+    act("✓", "Aceitar pedido", () => friendOp(i, "accept")), act("✗", "Recusar pedido", () => friendOp(i, "remove")))));
+  ok.forEach(i => box.append(navRow(cache[i], b => openDm(cache[i], b),
+    act("👤", "Ver perfil", () => showProfile(cache[i])), act("×", "Desfazer amizade", () => { if(confirm("Desfazer amizade com " + cache[i].username + "?")) friendOp(i, "remove"); }))));
 }
 async function addFriend(id){
-  const {error}=await sb.from("friendships").insert({requester_id: me.id, addressee_id: id});
+  const {error} = await sb.from("friendships").insert({requester_id: me.id, addressee_id: id});
   if(error) return toast("Não foi possível enviar o pedido.");
-  toast("Pedido enviado."); await loadFriends(); drawUsers();
+  toast("Pedido de amizade enviado."); await loadFriends(); drawUsers();
 }
 async function friendOp(id, op){
-  const q=sb.from("friendships"); await (op==="accept"?q.update({status:"accepted"}).eq("id", fr[id].id):q.delete().eq("id", fr[id].id));
+  const q = sb.from("friendships");
+  await (op === "accept" ? q.update({status:"accepted"}).eq("id", fr[id].id) : q.delete().eq("id", fr[id].id));
   await loadFriends(); drawUsers();
 }
+
+// ---------- grupos ----------
 async function loadGroups(){
-  try{
-    let g; try{ const r=await sb.from("groups").select(GCOLS).order("created_at",{ascending:false}).limit(60); if(r.error) throw r.error; g=r; }catch(e){ console.warn("GCOLS_FULL falhou, usando MIN", e.message); GCOLS=GCOLS_MIN; g=await sb.from("groups").select(GCOLS).order("created_at",{ascending:false}).limit(60); }
-    const m=await sb.from("group_members").select("group_id").eq("user_id", me.id);
-    groups=g.data||[]; myGroups=new Set((m.data||[]).map(x=>x.group_id)); drawGroups();
-  }catch(e){ console.warn("loadGroups falhou", e.message); groups=[]; myGroups=new Set(); drawGroups(); }
+  const [g, m] = await Promise.all([
+    sb.from("groups").select(GCOLS).order("created_at",{ascending:false}).limit(60),
+    sb.from("group_members").select("group_id").eq("user_id", me.id)]);
+  groups = g.data || []; myGroups = new Set((m.data || []).map(x => x.group_id)); drawGroups();
 }
-function openGroup(g, btn){ openCtx({type:"group", id: g.id, g}, g.name, (g.description||"")+(g.is_private?(g.description?" · ":"")+"grupo privado":""), btn); }
+function openGroup(g, btn){ openCtx({type:"group", id: g.id, g}, (g.icon ? g.icon + " " : "") + g.name, (g.tag && new Date(g.tag_expires) > Date.now() ? "[" + g.tag + "] " : "") + (g.description || "") + (g.is_private ? (g.description ? " · " : "") + "grupo privado" : ""), btn); }
 function drawGroups(){
-  const box=$("glist"); box.innerHTML="";
-  if(!groups.length) box.append(el("div","Nenhum grupo ainda. Crie o primeiro!","hint"));
-  [...groups].sort((a,b)=>myGroups.has(b.id)-myGroups.has(a.id)).forEach(g=>{
-    const b=el("button","", "nav"); b.type="button"; b.append(el("span",(g.is_private?"🔒 ":"")+g.name));
-    if(!myGroups.has(g.id)) b.append(el("small","entrar","hint"));
-    b.onclick=()=>openGroup(g, b); box.append(b);
+  const box = $("glist"); box.innerHTML = "";
+  if(!groups.length) box.append(el("div", "Nenhum grupo ainda. Crie o primeiro!", "hint"));
+  [...groups].sort((a, b) => myGroups.has(b.id) - myGroups.has(a.id)).forEach(g => {
+    const b = el("button", "", "nav"); b.type = "button"; b.append(el("span", (g.icon ? g.icon + " " : "") + (g.is_private ? "🔒 " : "") + g.name));
+    if(!myGroups.has(g.id)) b.append(el("small", "entrar", "hint"));
+    b.onclick = () => openGroup(g, b); box.append(b);
   });
 }
-let editing=null;
+let editing = null;
 function openGroupDlg(g){
-  editing=g; $("gerr").textContent="";
-  $("gtitle").textContent=g?"Editar grupo":"Criar grupo"; $("gok").textContent=g?"Salvar":"Criar";
-  $("gname").value=g?g.name:""; $("gdesc").value=g?g.description:""; $("gpriv").checked=g?g.is_private:false;
-  $("gtagw").classList.toggle("hide",!g); $("gtag").value=g&&g.tag?g.tag:"";
-  const left=g&&g.tag_expires?Math.ceil((new Date(g.tag_expires)-Date.now())/864e5):0;
-  $("gtaginfo").textContent=left>0?`Tag ativa por mais ${left} ${left===1?"dia":"dias"}.`:"Teste grátis de 2 dias (uma vez por conta).";
+  editing = g; $("gerr").textContent = "";
+  $("gtitle").textContent = g ? "Editar grupo" : "Criar grupo"; $("gok").textContent = g ? "Salvar" : "Criar";
+  $("gname").value = g ? g.name : ""; $("gdesc").value = g ? g.description : ""; $("gpriv").checked = g ? g.is_private : false;
+  $("gicon").value = g && g.icon ? g.icon : ""; $("gtagc").value = g && /^#[0-9a-f]{6}$/i.test(g.tag_color || "") ? g.tag_color : "#8b73ff";
+  $("gtagw").classList.toggle("hide", !(g && g.owner_id === me.id)); $("gtag").value = g && g.tag ? g.tag : "";
+  const left = g && g.tag_expires ? Math.ceil((new Date(g.tag_expires) - Date.now()) / 864e5) : 0;
+  $("gtaginfo").textContent = left > 0 ? `Tag ativa por mais ${left} ${left === 1 ? "dia" : "dias"}.` : "Teste grátis de 2 dias (uma vez por conta). Depois, a tag dura 30 dias + 3 de bônus. Cada pessoa pode ter 1 grupo com tag.";
   $("gdlg").showModal();
 }
-$("newg").onclick=()=>openGroupDlg(null);
-$("gedit").onclick=()=>openGroupDlg(ctx.g);
-$("gdel").onclick=async()=>{
-  if(!confirm('Excluir o grupo "'+ctx.g.name+'"?')) return;
-  const {error}=await sb.from("groups").delete().eq("id", ctx.id);
-  if(error) return toast("Não foi possível excluir."); await loadGroups(); openGlobal(); toast("Grupo excluído.");
+$("newg").onclick = () => openGroupDlg(null);
+$("gedit").onclick = () => openGroupDlg(ctx.g);
+$("gdel").onclick = async () => {
+  if(!confirm('Excluir o grupo "' + ctx.g.name + '"? As mensagens e os membros serão apagados e isso não tem volta.')) return;
+  let r = await sb.rpc("delete_group_safe", {gid: ctx.id}); if(r.error) r = await sb.from("groups").delete().eq("id", ctx.id);
+  if(r.error) return toast("Não foi possível excluir o grupo.");
+  await loadGroups(); openGlobal(); toast("Grupo excluído.");
 };
-$("gcancel").onclick=()=>$("gdlg").close();
-$("gok").onclick=async()=>{
-  const name=$("gname").value.trim(); if(name.length<3) return $("gerr").textContent="Nome precisa ter pelo menos 3 letras.";
+$("gcancel").onclick = () => $("gdlg").close();
+$("gok").onclick = async () => {
+  const name = $("gname").value.trim(); if(name.length < 3) return $("gerr").textContent = "O nome precisa ter pelo menos 3 letras.";
   if(editing){
-    const {data, error}=await sb.from("groups").update({name, description:$("gdesc").value.trim(), is_private:$("gpriv").checked}).eq("id", editing.id).select(GCOLS).single();
-    if(error) return $("gerr").textContent="Não foi possível salvar.";
-    const nt=$("gtag").value.trim().toUpperCase();
-    if(nt && nt!==(editing.tag||"")){
-      const t=await sb.rpc("set_group_tag", {gid: editing.id, new_tag: nt});
-      if(t.error){ const m=t.error.message; return $("gerr").textContent=m.includes("tag_invalida")?"Tag precisa ter 2 a 4 letras/números.":m.includes("tag_em_uso")?"Tag já em uso.":m.includes("tag_limite")?"Você já tem outro grupo com tag.":m.includes("tag_paga")?"Teste grátis já usado.":"Não foi possível definir a tag."; }
-      await loadTags();
+    const er = await sb.rpc("edit_group", {gid: editing.id, new_name: name, new_desc: $("gdesc").value.trim(), new_priv: $("gpriv").checked, new_icon: $("gicon").value.trim() || null, new_color: $("gtagc").value});
+    if(er.error) return $("gerr").textContent = "Não foi possível salvar o grupo. Rode o SQL novo (grupos-extras.sql) no Supabase. " + er.error.message;
+    const {data} = await sb.from("groups").select(GCOLS).eq("id", editing.id).single();
+    const nt = $("gtag").value.trim().toUpperCase();
+    if(nt && nt !== (editing.tag || "")){
+      const t = await sb.rpc("set_group_tag", {gid: editing.id, new_tag: nt});
+      if(t.error){ const m = t.error.message; return $("gerr").textContent = m.includes("tag_invalida") ? "A tag precisa ter 2 a 4 letras ou números." : m.includes("tag_em_uso") ? "Essa tag já está em uso." : m.includes("tag_limite") ? "Você já tem outro grupo com tag ativa." : m.includes("tag_paga") ? "Seu teste grátis já foi usado. A tag paga ainda não está disponível." : "Não foi possível definir a tag: " + m; }
     }
-    $("gdlg").close(); await loadGroups(); return openGroup(data);
+    const {data: fresh} = await sb.from("groups").select(GCOLS).eq("id", editing.id).single();
+    if(nt && (!fresh || fresh.tag !== nt)) return $("gerr").textContent = "A tag não foi salva no banco. Provavelmente o SQL novo (chat-extras) não foi aplicado no Supabase.";
+    await loadTags(); $("gdlg").close(); await loadGroups(); if(nt && nt !== (editing.tag || "")) toast("Tag " + nt + " salva."); return openGroup(fresh || data);
   }
-  const {data, error}=await sb.from("groups").insert({name, description:$("gdesc").value.trim(), owner_id: me.id, is_private:$("gpriv").checked}).select(GCOLS).single();
-  if(error) return $("gerr").textContent="Não foi possível criar o grupo.";
+  const {data, error} = await sb.from("groups").insert({name, description: $("gdesc").value.trim(), owner_id: me.id, is_private: $("gpriv").checked, ...($("gicon").value.trim() ? {icon: $("gicon").value.trim()} : {})}).select(GCOLS).single();
+  if(error) return $("gerr").textContent = "Não foi possível criar o grupo.";
   await sb.from("group_members").insert({group_id: data.id, user_id: me.id});
-  $("gdlg").close(); $("gname").value=$("gdesc").value=""; $("gpriv").checked=false; await loadGroups(); openGroup(data);
+  $("gdlg").close(); $("gname").value = $("gdesc").value = $("gicon").value = ""; $("gpriv").checked = false;
+  await loadGroups(); openGroup(data);
 };
-$("join").onclick=async()=>{ const {error}=await sb.from("group_members").insert({group_id: ctx.id, user_id: me.id}); if(error) return toast("Não foi possível entrar."); const g=ctx.g; await loadGroups(); openGroup(g); };
-$("leave").onclick=async()=>{ if(!confirm("Sair deste grupo?")) return; await sb.from("group_members").delete().eq("group_id", ctx.id).eq("user_id", me.id); await loadGroups(); openGlobal(); };
-async function shareLink(code){ const link=location.origin+location.pathname+"?convite="+code; try{ await navigator.clipboard.writeText(link); toast("Link copiado."); }catch{ prompt("Copie o link:", link); } }
-$("invite").onclick=async()=>{ const {data}=await sb.rpc("get_invite_code", {gid: ctx.id}); if(data) shareLink(data); else toast("Não foi possível gerar o link."); };
-$("reset").onclick=async()=>{ if(!confirm("Gerar novo link? O antigo deixa de funcionar.")) return; const {data}=await sb.rpc("reset_invite", {gid: ctx.id}); if(data) shareLink(data); };
-async function useInvite(code){
-  const {data, error}=await sb.rpc("join_by_code", {code});
-  if(error||!data){ toast("Convite inválido ou expirado."); return false; }
-  history.replaceState(null,"",location.pathname); await loadGroups(); const g=groups.find(x=>x.id===data); if(g) openGroup(g); return true;
+$("join").onclick = async () => {
+  const {error} = await sb.from("group_members").insert({group_id: ctx.id, user_id: me.id}); if(error) return toast("Não foi possível entrar.");
+  const g = ctx.g; await loadGroups(); openGroup(g);
+};
+$("leave").onclick = async () => {
+  if(!confirm("Sair deste grupo?")) return;
+  await sb.from("group_members").delete().eq("group_id", ctx.id).eq("user_id", me.id); await loadGroups(); openGlobal();
+};
+async function shareLink(code){
+  const link = location.origin + location.pathname + "?convite=" + code;
+  try{ await navigator.clipboard.writeText(link); toast("Link de convite copiado."); } catch{ prompt("Copie o link de convite:", link); }
 }
-$("joing").onclick=()=>{ $("jerr").textContent=""; $("jdlg").showModal(); };
-$("jcancel").onclick=()=>$("jdlg").close();
-$("jok").onclick=async()=>{
-  const raw=$("jcode").value.trim(), m=raw.match(/convite=([a-z0-9]+)/i), code=(m?m[1]:raw).toLowerCase(); if(!code) return;
-  if(await useInvite(code)){ $("jdlg").close(); $("jcode").value=""; } else $("jerr").textContent="Convite inválido.";
+$("invite").onclick = async () => { const {data} = await sb.rpc("get_invite_code", {gid: ctx.id}); if(data) shareLink(data); else toast("Não foi possível gerar o link."); };
+$("reset").onclick = async () => {
+  if(!confirm("Gerar um novo link? O link antigo deixa de funcionar.")) return;
+  const {data} = await sb.rpc("reset_invite", {gid: ctx.id}); if(data) shareLink(data);
 };
-$("inviteSite").onclick=async()=>{
-  const {data: code}=await sb.rpc("my_ref_code");
-  const url=location.origin+location.pathname+(code?"?ref="+code:""), text="Vem conversar comigo na Roda!";
-  if(navigator.share){ try{ await navigator.share({title:"Roda", text, url}); return; }catch(e){ if(e.name==="AbortError") return; } }
-  try{ await navigator.clipboard.writeText(url); toast("Seu link de convite foi copiado."); }catch{ prompt("Copie o link:", url); }
+async function useInvite(code){
+  const {data, error} = await sb.rpc("join_by_code", {code});
+  if(error || !data){ toast("Convite inválido ou expirado."); return false; }
+  history.replaceState(null, "", location.pathname); await loadGroups();
+  const g = groups.find(x => x.id === data); if(g) openGroup(g); return true;
+}
+$("joing").onclick = () => { $("jerr").textContent = ""; $("jdlg").showModal(); };
+$("jcancel").onclick = () => $("jdlg").close();
+$("jok").onclick = async () => {
+  const raw = $("jcode").value.trim(), m = raw.match(/convite=([a-z0-9]+)/i), code = (m ? m[1] : raw).toLowerCase(); if(!code) return;
+  if(await useInvite(code)){ $("jdlg").close(); $("jcode").value = ""; } else $("jerr").textContent = "Convite inválido ou expirado.";
 };
-let weeklyClaimed=false, ITEMS={}, owned=new Set(), emblemsSel=[];
-const RAR={common:["Comum","#9aa7c7"], rare:["Raro","#5aa9ff"], epic:["Épico","#c084ff"]};
+
+// ---------- convidar amigos para o site ----------
+$("inviteSite").onclick = async () => {
+  const {data: code} = await sb.rpc("my_ref_code");
+  const url = location.origin + location.pathname + (code ? "?ref=" + code : ""), text = "Vem conversar comigo na Roda!";
+  if(navigator.share){ try{ await navigator.share({title:"Roda", text, url}); return; } catch(e){ if(e.name === "AbortError") return; } }
+  try{ await navigator.clipboard.writeText(url); toast("Seu link de convite foi copiado. Quem criar conta por ele libera efeitos no seu perfil."); } catch{ prompt("Copie o link do site:", url); }
+};
+
+// ---------- recompensa semanal: itens colecionáveis ----------
+let weeklyClaimed = false, ITEMS = {}, owned = new Set(), emblemsSel = [];
+const RAR = {common: ["Comum", "#9aa7c7"], rare: ["Raro", "#5aa9ff"], epic: ["Épico", "#c084ff"]};
 async function loadItems(){
-  try{
-    const [c,o]=await Promise.all([sb.from("items").select("*"), sb.from("user_items").select("item_id")]);
-    ITEMS=Object.fromEntries((c.data||[]).map(i=>[i.id,i])); owned=new Set((o.data||[]).map(x=>x.item_id));
-  }catch(e){ console.warn("loadItems falhou", e.message); ITEMS={}; owned=new Set(); }
+  const [c, o] = await Promise.all([sb.from("items").select("*"), sb.from("user_items").select("item_id")]);
+  ITEMS = Object.fromEntries((c.data || []).map(i => [i.id, i])); owned = new Set((o.data || []).map(x => x.item_id));
 }
 async function loadWeekly(){
-  try{ const {data}=await sb.rpc("weekly_status"); weeklyClaimed=!!(data&&data[0]&&data[0].claimed); drawWeekly(); }
-  catch(e){ console.warn("weekly_status falhou", e.message) }
+  const {data} = await sb.rpc("weekly_status"); weeklyClaimed = !!(data && data[0] && data[0].claimed); drawWeekly();
 }
 function drawWeekly(){
-  const b=$("weekly"); b.textContent=weeklyClaimed?"✓ Recompensa da semana resgatada":"🎁 Resgatar recompensa da semana";
-  b.style.fontWeight=weeklyClaimed?500:800; b.style.color=weeklyClaimed?"var(--muted)":"var(--brand)";
+  const b = $("weekly"); b.textContent = weeklyClaimed ? "✓ Recompensa da semana resgatada" : "🎁 Resgatar recompensa da semana";
+  b.style.fontWeight = weeklyClaimed ? 500 : 800; b.style.color = weeklyClaimed ? "var(--muted)" : "var(--brand)";
 }
-$("weekly").onclick=async()=>{
-  if(weeklyClaimed) return toast("Você já resgatou esta semana.");
-  const {data, error}=await sb.rpc("claim_weekly"); if(error) return toast("Não foi possível resgatar agora.");
+$("weekly").onclick = async () => {
+  if(weeklyClaimed) return toast("Você já resgatou esta semana. Volte na segunda-feira!");
+  const {data, error} = await sb.rpc("claim_weekly"); if(error) return toast("Não foi possível resgatar agora.");
   await Promise.all([loadWeekly(), loadItems()]);
-  if(!data) return toast("Você já tem todos os itens! 🎉");
-  const r=RAR[data.rarity]||RAR.common;
-  $("rwdE").textContent=data.emoji; $("rwdN").textContent=data.name;
-  $("rwdR").textContent=r[0]+" · "+(data.kind==="effect"?"Efeito":"Emblema"); $("rwdR").style.color=r[1]; $("rdlg").showModal();
+  if(!data) return toast("Você já tem todos os itens da coleção! 🎉");
+  const r = RAR[data.rarity] || RAR.common;
+  $("rwdE").textContent = data.emoji; $("rwdN").textContent = data.name;
+  $("rwdR").textContent = r[0] + " · " + (data.kind === "effect" ? "Efeito de perfil" : "Emblema"); $("rwdR").style.color = r[1];
+  $("rdlg").showModal();
 };
-$("rwdClose").onclick=()=>$("rdlg").close();
-$("rwdGo").onclick=()=>{ $("rdlg").close(); $("meBtn").click(); };
+$("rwdClose").onclick = () => $("rdlg").close();
+$("rwdGo").onclick = () => { $("rdlg").close(); $("meBtn").click(); };
 function drawEmblems(){
-  const box=$("emblist"); box.innerHTML="";
-  Object.values(ITEMS).filter(i=>i.kind==="emblem").forEach(i=>{
-    const has=owned.has(i.id), on=emblemsSel.includes(i.id), b=el("button", has?i.emoji:"🔒","ghost fxb");
-    b.type="button"; b.disabled=!has; b.title=b.ariaLabel=has?i.name:"Bloqueado"; b.style.fontSize="1.2rem"; b.setAttribute("aria-pressed", on);
-    b.onclick=()=>{ if(on) emblemsSel=emblemsSel.filter(x=>x!==i.id); else if(emblemsSel.length<3) emblemsSel=[...emblemsSel,i.id]; else return toast("Até 3 emblemas."); drawEmblems(); };
+  const box = $("emblist"); box.innerHTML = "";
+  Object.values(ITEMS).filter(i => i.kind === "emblem").forEach(i => {
+    const has = owned.has(i.id), on = emblemsSel.includes(i.id), b = el("button", has ? i.emoji : "🔒", "ghost fxb");
+    b.type = "button"; b.disabled = !has; b.title = b.ariaLabel = has ? i.name : "Emblema bloqueado"; b.style.fontSize = "1.2rem"; b.setAttribute("aria-pressed", on);
+    b.onclick = () => {
+      if(on) emblemsSel = emblemsSel.filter(x => x !== i.id);
+      else if(emblemsSel.length < 3) emblemsSel = [...emblemsSel, i.id];
+      else return toast("Você pode usar até 3 emblemas.");
+      drawEmblems();
+    };
     box.append(b);
   });
-  const n=[...owned].filter(id=>ITEMS[id]).length; $("embhint").textContent=`Coleção: ${n} de ${Object.keys(ITEMS).length} itens.`;
+  const n = [...owned].filter(id => ITEMS[id]).length;
+  $("embhint").textContent = `Coleção: ${n} de ${Object.keys(ITEMS).length} itens. Resgate a recompensa da semana para ganhar mais.`;
 }
+
+// ---------- cartão de perfil e efeitos ----------
 function safeBanner(p){
-  const u=p.banner_url||""; if(!u.startsWith(SUPABASE_URL+"/storage/v1/object/public/banners/")||/["'()\\\s]/.test(u)) return "";
-  return /\.gif(\?|$)/i.test(u)&&!isPrem(p.id)?"":u;
+  const u = p.banner_url || "";
+  if(!u.startsWith(SUPABASE_URL + "/storage/v1/object/public/banners/") || /["'()\\\s]/.test(u)) return "";
+  return /\.gif(\?|$)/i.test(u) && !isPrem(p.id) ? "" : u;
 }
 async function showProfile(p){
-  p=cache[p.id]||p;
-  const [a, v, lk]=await Promise.all([sb.rpc("age_of", {p: p.id}), sb.rpc("invites_of", {uid: p.id}), getLinks(p.id)]);
+  p = cache[p.id] || p;
+  const [a, v, lk] = await Promise.all([sb.rpc("age_of", {p: p.id}), sb.rpc("invites_of", {uid: p.id}), getLinks(p.id)]);
   drawCardLinks(lk);
-  const age=a.data, inv=v.data||0, mine=p.id===me.id, bn=safeBanner(p);
-  $("pcard").className="pcard"+(p.effect==="aurora"?" fx-aurora":"");
-  $("pcard").style.background=/^#[0-9a-f]{6}$/i.test(p.theme||"")?`linear-gradient(180deg, ${p.theme}cc, var(--panel) 78%)`:"";
-  $("pctop").style.backgroundImage=bn?`url("${bn}")`:""; $("pctop").style.backgroundSize=bn?"cover":""; $("pctop").style.backgroundPosition="center";
-  $("pcav").replaceChildren(avatar(p)); $("pcname").replaceChildren(nameEl(p));
-  $("pcstatus").textContent=p.status||""; $("pcstatus").classList.toggle("hide",!p.status);
-  const emb=(p.emblems||[]).map(id=>ITEMS[id]).filter(Boolean), eb=$("pcemb"); eb.innerHTML=""; emb.forEach(i=>{ const s=el("span", i.emoji); s.title=i.name; eb.append(s); }); eb.classList.toggle("hide",!emb.length);
-  $("pcbio").textContent=p.bio||""; $("pcbiow").classList.toggle("hide",!p.bio);
-  $("pcsince").textContent=new Date(p.created_at).toLocaleDateString("pt-BR",{day:"numeric", month:"long", year:"numeric"});
-  $("pcage").textContent=age?age+" anos":""; $("pcagew").classList.toggle("hide",!age);
-  $("pcinv").textContent=inv?`${inv} ${inv===1?"pessoa":"pessoas"}`:""; $("pcinvw").classList.toggle("hide",!inv);
-  $("pcdm").textContent=mine?"Editar meu perfil":"Enviar mensagem";
-  $("pcdm").onclick=()=>{ $("pdlg").close(); if(mine) $("meBtn").click(); else openDm(p, null); };
-  $("pcfr").classList.toggle("hide",mine||!!fr[p.id]);
-  $("pcfr").onclick=async()=>{ await addFriend(p.id); $("pdlg").close(); };
+  const age = a.data, inv = v.data || 0, mine = p.id === me.id, bn = safeBanner(p);
+  $("pcard").className = "pcard" + (p.effect === "aurora" ? " fx-aurora" : "");
+  $("pcard").style.background = /^#[0-9a-f]{6}$/i.test(p.theme || "") ? `linear-gradient(180deg, ${p.theme}cc, var(--panel) 78%)` : "";
+  $("pctop").style.backgroundImage = bn ? `url("${bn}")` : ""; $("pctop").style.backgroundSize = bn ? "cover" : ""; $("pctop").style.backgroundPosition = "center";
+  $("pcav").replaceChildren(avatar(p)); $("pcname").replaceChildren(nameEl(p, true));
+  $("pcstatus").textContent = p.status || ""; $("pcstatus").classList.toggle("hide", !p.status);
+  const emb = (p.emblems || []).map(id => ITEMS[id]).filter(Boolean), eb = $("pcemb"); eb.innerHTML = "";
+  emb.forEach(i => { const s = el("span", i.emoji); s.title = i.name; eb.append(s); }); eb.classList.toggle("hide", !emb.length);
+  $("pcbio").textContent = p.bio || ""; $("pcbiow").classList.toggle("hide", !p.bio);
+  $("pcsince").textContent = new Date(p.created_at).toLocaleDateString("pt-BR", {day:"numeric", month:"long", year:"numeric"});
+  $("pcage").textContent = age ? age + " anos" : ""; $("pcagew").classList.toggle("hide", !age);
+  $("pcinv").textContent = inv ? `${inv} ${inv === 1 ? "pessoa" : "pessoas"}` : ""; $("pcinvw").classList.toggle("hide", !inv);
+  $("pcdm").textContent = mine ? "Editar meu perfil" : "Enviar mensagem";
+  $("pcdm").onclick = () => { $("pdlg").close(); if(mine) $("meBtn").click(); else openDm(p, null); };
+  $("pcfr").classList.toggle("hide", mine || !!fr[p.id]);
+  $("pcfr").onclick = async () => { await addFriend(p.id); $("pdlg").close(); };
   $("pdlg").showModal();
 }
-$("pcx").onclick=()=>$("pdlg").close();
-const FX=[[null,"Nenhum",0],["ring","Anel animado",1],["gradient","Nome em degradê",3],["glow","Brilho no nome",5],["aurora","Perfil aurora",10]];
-let fxSel=null, myInv=0, themeSel=null, bannerFile=null, bannerRemove=false;
-const THEMES=["#3a2a8f","#0f5c4a","#1b3f8a","#7a1d1d"], PLUS="Roda Plus";
+$("pcx").onclick = () => $("pdlg").close();
+const FX = [[null, "Nenhum", 0], ["ring", "Anel animado", 1], ["gradient", "Nome em degradê", 3], ["glow", "Brilho no nome", 5], ["aurora", "Perfil aurora", 10]];
+let fxSel = null, myInv = 0, themeSel = null, bannerFile = null, bannerRemove = false;
+const THEMES = ["#3a2a8f", "#0f5c4a", "#1b3f8a", "#7a1d1d"], PLUS = "Roda VIP";
+// ====== EDITE AQUI: preço e como assinar o VIP ======
+const VIP_PRICE = "R$ 9,90 por mês", VIP_HOW = "Para assinar, faça o Pix para a chave SUA_CHAVE_PIX e envie o comprovante para @seu_contato. Seu VIP é liberado em até 24 horas.";
+const VIP_PERKS = [["Nome com qualquer cor", "Escolha a cor que quiser, não só as 4 padrão."], ["Todos os efeitos animados", "Anel, degradê, brilho e perfil aurora liberados."], ["Banner em GIF e tema livre", "Seu perfil em movimento e com a sua cor."], ["Todas as redes no perfil", "Até 7 redes, em vez de 3."], ["Tag VIP no nome", "Todo mundo vê que você apoia a Roda."], ["Apoia o projeto", "Ajuda a Roda a continuar crescendo."]];
 function drawFx(){
-  const prem=isPrem(me.id), box=$("fxlist"); box.innerHTML="";
-  FX.forEach(([id,label,inv])=>{ const ok=!inv||prem||myInv>=inv||owned.has("fx_"+id); const b=el("button",label+(ok?"":` · ${inv} convites`),"ghost fxb"); b.type="button"; b.disabled=!ok; b.setAttribute("aria-pressed", id===fxSel); b.onclick=()=>{ fxSel=id; drawFx(); }; box.append(b); });
-  $("fxhint").textContent=`Você convidou ${myInv} ${myInv===1?"pessoa":"pessoas"}.`;
+  const prem = isPrem(me.id), box = $("fxlist"); box.innerHTML = "";
+  FX.forEach(([id, label, inv]) => {
+    const ok = !inv || prem || myInv >= inv || owned.has("fx_" + id);
+    const b = el("button", label + (ok ? "" : ` · ${inv} ${inv === 1 ? "convite" : "convites"} ou na recompensa da semana`), "ghost fxb");
+    b.type = "button"; b.disabled = !ok; b.setAttribute("aria-pressed", id === fxSel); b.onclick = () => { fxSel = id; drawFx(); }; box.append(b);
+  });
+  $("fxhint").textContent = `Você convidou ${myInv} ${myInv === 1 ? "pessoa" : "pessoas"}. Efeitos também podem vir na recompensa da semana. Membros do ${PLUS} têm todos liberados.`;
 }
 function drawTheme(){
-  const box=$("tswatches"); box.innerHTML="";
-  [null,...THEMES].forEach(c=>{ const b=el("button","", "sw"+(c===themeSel?" on":"")); b.type="button"; b.style.background=c||"var(--panel)"; b.ariaLabel=c?"Tema "+c:"Sem tema"; b.onclick=()=>{ themeSel=c; drawTheme(); }; box.append(b); });
-  const prem=isPrem(me.id); $("tcolor").disabled=!prem; if(themeSel) $("tcolor").value=themeSel;
-  $("bhint2").textContent=prem?`Membro do ${PLUS} pode usar GIF e cor livre.`:`GIF e tema livre são do ${PLUS}.`;
+  const box = $("tswatches"); box.innerHTML = "";
+  [null, ...THEMES].forEach(c => {
+    const b = el("button", "", "sw" + (c === themeSel ? " on" : "")); b.type = "button"; b.style.background = c || "var(--panel)";
+    b.ariaLabel = c ? "Tema " + c : "Sem tema"; b.onclick = () => { themeSel = c; drawTheme(); }; box.append(b);
+  });
+  const prem = isPrem(me.id); $("tcolor").disabled = !prem; if(themeSel) $("tcolor").value = themeSel;
+  $("bhint2").textContent = prem ? `Como membro do ${PLUS}, você pode usar GIF no banner e qualquer cor de tema.` : `GIF animado no banner e tema livre são exclusivos do ${PLUS}. Mesmo assim, você pode usar uma imagem parada.`;
 }
-$("tcolor").oninput=e=>{ themeSel=e.target.value; drawTheme(); };
-function drawBannerPrev(){ const u=bannerFile?URL.createObjectURL(bannerFile):bannerRemove?"":safeBanner(myProf), pv=$("bprev"); pv.style.backgroundImage=u?`url("${u}")`:""; pv.textContent=u?"":"Sem banner"; }
-$("bpick").onclick=()=>$("bfile").click();
-$("bfile").onchange=()=>{ const f=$("bfile").files[0]; if(f){ bannerFile=f; bannerRemove=false; drawBannerPrev(); } };
-$("brem").onclick=()=>{ bannerFile=null; bannerRemove=true; $("bfile").value=""; drawBannerPrev(); };
-async function toStaticJpeg(f){ try{ const bmp=await createImageBitmap(f), W=Math.min(bmp.width,1200), H=Math.round(bmp.height*W/bmp.width); const c=document.createElement("canvas"); c.width=W; c.height=H; c.getContext("2d").drawImage(bmp,0,0,W,H); return await new Promise(r=>c.toBlob(r,"image/jpeg",0.85)); }catch{ return null; } }
-const NETS={instagram:["Instagram","https://"+ "instagram.com/"], tiktok:["TikTok","https://www.tiktok.com/@"], x:["X","https://x.com/"], youtube:["YouTube","https://www.youtube.com/@"], github:["GitHub","https://github.com/"], twitch:["Twitch","https://twitch.tv/"], kick:["Kick","https://kick.com/"]}, FREE_LINKS=3;
-let myLinks={}; const okHandle=h=>/^[A-Za-z0-9._-]{1,40}$/.test(h);
-async function getLinks(uid){ try{ const {data}=await sb.from("profile_links").select("platform,handle").eq("user_id", uid); return data||[]; }catch{ return []; } }
-function cleanHandle(v){ let h=v.trim().split(/[?#]/)[0].replace(/\/+$/,""); h=h.split("/").pop().replace(/^@/,""); return h; }
+$("tcolor").oninput = e => { themeSel = e.target.value; drawTheme(); };
+function drawBannerPrev(){
+  const u = bannerFile ? URL.createObjectURL(bannerFile) : bannerRemove ? "" : safeBanner(myProf), pv = $("bprev");
+  pv.style.backgroundImage = u ? `url("${u}")` : ""; pv.textContent = u ? "" : "Sem banner";
+}
+$("bpick").onclick = () => $("bfile").click();
+$("bfile").onchange = () => { const f = $("bfile").files[0]; if(f){ bannerFile = f; bannerRemove = false; drawBannerPrev(); } };
+$("brem").onclick = () => { bannerFile = null; bannerRemove = true; $("bfile").value = ""; drawBannerPrev(); };
+async function toStaticJpeg(f){ // para quem não tem o Plus: pega só o primeiro quadro (GIF vira imagem parada)
+  try{
+    const bmp = await createImageBitmap(f), W = Math.min(bmp.width, 1200), H = Math.round(bmp.height * W / bmp.width);
+    const c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").drawImage(bmp, 0, 0, W, H);
+    return await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+  }catch{ return null; }
+}
+
+// ---------- redes sociais ----------
+const NETS = {instagram:["Instagram","https://instagram.com/"], tiktok:["TikTok","https://www.tiktok.com/@"], x:["X","https://x.com/"], youtube:["YouTube","https://www.youtube.com/@"], github:["GitHub","https://github.com/"], twitch:["Twitch","https://twitch.tv/"], kick:["Kick","https://kick.com/"]}, FREE_LINKS = 3;
+let myLinks = {};
+const okHandle = h => /^[A-Za-z0-9._-]{1,40}$/.test(h);
+async function getLinks(uid){ const {data} = await sb.from("profile_links").select("platform,handle").eq("user_id", uid); return data || []; }
+function cleanHandle(v){ // aceita @usuario, usuario ou o link inteiro
+  let h = v.trim().split(/[?#]/)[0].replace(/\/+$/, ""); h = h.split("/").pop().replace(/^@/, ""); return h;
+}
 function drawCardLinks(list){
-  const box=$("pclnk"); box.innerHTML="";
-  list.filter(l=>NETS[l.platform]&&okHandle(l.handle)).forEach(l=>{ const a=el("a",NETS[l.platform][0]); a.href=NETS[l.platform][1]+encodeURIComponent(l.handle); a.target="_blank"; a.rel="noopener noreferrer nofollow"; a.title="@"+l.handle; box.append(a); });
-  box.classList.toggle("hide",!box.children.length);
+  const box = $("pclnk"); box.innerHTML = "";
+  list.filter(l => NETS[l.platform] && okHandle(l.handle)).forEach(l => {
+    const a = el("a", NETS[l.platform][0]); a.href = NETS[l.platform][1] + encodeURIComponent(l.handle);
+    a.target = "_blank"; a.rel = "noopener noreferrer nofollow"; a.title = "@" + l.handle; box.append(a);
+  });
+  box.classList.toggle("hide", !box.children.length);
 }
 async function drawLinks(){
-  const box=$("lnklist"); box.innerHTML="";
-  myLinks=Object.fromEntries((await getLinks(me.id)).map(l=>[l.platform,l.handle]));
-  Object.entries(NETS).forEach(([id,[name]])=>{ const r=el("div","", "lnrow"), i=document.createElement("input"); i.id="ln_"+id; i.maxLength=120; i.placeholder="seu usuário"; i.value=myLinks[id]||""; i.setAttribute("aria-label", name); r.append(el("span",name), i); box.append(r); });
-  $("lnkhint").textContent=isPrem(me.id)?`Membro do ${PLUS} pode usar todas.`:`Até ${FREE_LINKS} redes. ${PLUS} libera todas.`;
+  const box = $("lnklist"); box.innerHTML = "";
+  myLinks = Object.fromEntries((await getLinks(me.id)).map(l => [l.platform, l.handle]));
+  Object.entries(NETS).forEach(([id, [name]]) => {
+    const r = el("div", "", "lnrow"), i = document.createElement("input");
+    i.id = "ln_" + id; i.maxLength = 120; i.placeholder = "seu usuário"; i.value = myLinks[id] || ""; i.setAttribute("aria-label", name);
+    r.append(el("span", name), i); box.append(r);
+  });
+  const n = Object.keys(myLinks).length; $("lsum").textContent = "Redes sociais" + (n ? ` (${n})` : "");
+  $("lnkhint").textContent = isPrem(me.id) ? `Como membro do ${PLUS}, você pode usar todas as redes.` : `Você pode mostrar até ${FREE_LINKS} redes. Membros do ${PLUS} podem mostrar todas.`;
 }
-async function saveLinks(){
-  const want={};
-  for(const id in NETS){ const v=$("ln_"+id); if(!v) continue; const h=cleanHandle(v.value); if(!h) continue; if(!okHandle(h)) return `Usuário inválido em ${NETS[id][0]}.`; want[id]=h; }
-  if(!isPrem(me.id)&&Object.keys(want).length>FREE_LINKS) return `Até ${FREE_LINKS} redes. Mais que isso é do ${PLUS}.`;
-  for(const id in myLinks) if(!want[id]){ const r=await sb.from("profile_links").delete().eq("user_id", me.id).eq("platform", id); if(r.error) return "Não foi possível salvar as redes."; }
-  for(const id in want) if(want[id]!==myLinks[id]){ const r=await sb.from("profile_links").upsert({user_id: me.id, platform: id, handle: want[id]}); if(r.error) return r.error.message.includes("links_premium")?`Até ${FREE_LINKS} redes.`:"Não foi possível salvar."; }
-  myLinks=want; return null;
+async function saveLinks(){ // devolve uma mensagem de erro, ou null se deu certo
+  const want = {};
+  for(const id in NETS){
+    const v = $("ln_" + id); if(!v) continue; const h = cleanHandle(v.value);
+    if(!h) continue;
+    if(!okHandle(h)) return `Usuário inválido em ${NETS[id][0]}. Use só letras, números, ponto, _ ou -.`;
+    want[id] = h;
+  }
+  if(!isPrem(me.id) && Object.keys(want).length > FREE_LINKS) return `Você pode mostrar até ${FREE_LINKS} redes. Mais que isso é exclusivo do ${PLUS}.`;
+  for(const id in myLinks) if(!want[id]){ const r = await sb.from("profile_links").delete().eq("user_id", me.id).eq("platform", id); if(r.error) return "Não foi possível salvar as redes."; }
+  for(const id in want) if(want[id] !== myLinks[id]){
+    const r = await sb.from("profile_links").upsert({user_id: me.id, platform: id, handle: want[id]});
+    if(r.error) return r.error.message.includes("links_premium") ? `Você pode mostrar até ${FREE_LINKS} redes. Mais que isso é exclusivo do ${PLUS}.` : "Não foi possível salvar as redes.";
+  }
+  myLinks = want; return null;
 }
-$("meBtn").onclick=async()=>{
-  show("profile"); mark(null); closeSide(); $("perr").textContent="";
-  const [b,i]=await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of",{uid:me.id}), loadItems()]); myBirth=b.data; myInv=i.data||0;
-  const wgid=myProf.worn_group; if(wgid&&!groups.some(g=>String(g.id)===String(wgid))){ const wg=await sb.from("groups").select(GCOLS).eq("id", wgid).maybeSingle(); if(wg.data) groups.push(wg.data); }
-  drawProfile();
+
+// ---------- perfil ----------
+$("meBtn").onclick = async () => {
+  show("profile"); mark(null); closeSide(); $("perr").textContent = "";
+  const [b, i, tg] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id}), sb.rpc("my_tag_groups"), loadItems(), loadGroups()]); myBirth = b.data; myInv = i.data || 0;
+  tagGroups = tg.error ? groups.filter(g => g.tag && myGroups.has(g.id)) : (tg.data || []); drawProfile();
 };
 function drawSwatches(){
-  const box=$("swatches"); box.innerHTML="";
-  [null,...FREE].forEach(c=>{ const b=el("button","", "sw"+(c===accentSel?" on":"")); b.type="button"; b.style.background=c||"var(--ink)"; b.ariaLabel=c?"Cor "+c:"Cor padrão"; b.onclick=()=>{ accentSel=c; drawSwatches(); }; box.append(b); });
-  const prem=isPrem(me.id); $("pcolor").disabled=!prem; if(accentSel) $("pcolor").value=accentSel;
-  $("chint").textContent=prem?"VIP pode usar qualquer cor.":"Cor livre é exclusiva para VIPs.";
-  const pv=$("phead").querySelector("strong"); if(pv) pv.style.color=accentSel||"";
+  const box = $("swatches"); box.innerHTML = "";
+  [null, ...FREE].forEach(c => {
+    const b = el("button", "", "sw" + (c === accentSel ? " on" : "")); b.type = "button";
+    b.style.background = c || "var(--ink)"; b.ariaLabel = c ? "Cor " + c : "Cor padrão"; b.onclick = () => { accentSel = c; drawSwatches(); }; box.append(b);
+  });
+  const prem = isPrem(me.id); $("pcolor").disabled = !prem;
+  if(accentSel) $("pcolor").value = accentSel;
+  $("chint").textContent = prem ? "Como VIP, você pode usar qualquer cor." : "Cor livre é exclusiva para VIPs.";
+  const pv = $("phead").querySelector("strong"); if(pv) pv.style.color = accentSel || "";
 }
-$("pcolor").oninput=e=>{ accentSel=e.target.value; drawSwatches(); };
+$("pcolor").oninput = e => { accentSel = e.target.value; drawSwatches(); };
 function drawProfile(){
   $("pav").replaceChildren(...avatar(myProf).childNodes);
-  $("phead").replaceChildren(nameEl(myProf));
-  $("page").textContent=myBirth?Math.floor((Date.now()-new Date(myBirth))/31557600000)+" anos":"Idade não informada";
-  $("pname").value=myProf.username; $("pbio").value=myProf.bio||""; $("pstatus").value=myProf.status||"";
-  const left=myProf.name_changed_at?WEEK-(Date.now()-new Date(myProf.name_changed_at)):0, days=Math.ceil(left/864e5);
-  $("pname").disabled=left>0; $("nhint").textContent=left>0?`Você poderá trocar o nome em ${days} ${days===1?"dia":"dias"}.`:"Você pode trocar o nome a cada 7 dias.";
-  $("pbirth").value=myBirth||""; $("pbirth").disabled=!!myBirth;
-  $("bhint").textContent=myBirth?"A data de nascimento não pode ser alterada.":"Só a idade aparece para os outros.";
-  accentSel=myProf.accent||null; drawSwatches(); fxSel=myProf.effect||null; drawFx(); emblemsSel=[...(myProf.emblems||[])]; drawEmblems();
-  themeSel=myProf.theme||null; drawTheme(); bannerFile=null; bannerRemove=false; $("bfile").value=""; drawBannerPrev(); drawLinks();
-  const w=$("wear"); w.innerHTML=""; w.append(new Option("Nenhuma",""));
-  groups.filter(g=>g.tag&&g.tag_expires&&new Date(g.tag_expires)>Date.now()&&(myGroups.has(g.id)||g.owner_id===me.id||String(g.id)===String(myProf.worn_group))).forEach(g=>w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
-  w.value=myProf.worn_group||"";
+  $("phead").replaceChildren(nameEl(myProf, true));
+  $("page").textContent = myBirth ? Math.floor((Date.now() - new Date(myBirth)) / 31557600000) + " anos" : "Idade não informada";
+  $("pname").value = myProf.username; $("pbio").value = myProf.bio || ""; $("pstatus").value = myProf.status || "";
+  const left = myProf.name_changed_at ? WEEK - (Date.now() - new Date(myProf.name_changed_at)) : 0, days = Math.ceil(left / 864e5);
+  $("pname").disabled = left > 0;
+  $("nhint").textContent = left > 0 ? `Você poderá trocar o nome em ${days} ${days === 1 ? "dia" : "dias"}. A troca antecipada paga ainda não está disponível.` : "Você pode trocar o nome de usuário a cada 7 dias.";
+  $("pbirth").value = myBirth || ""; $("pbirth").disabled = !!myBirth;
+  $("bhint").textContent = myBirth ? "A data de nascimento não pode ser alterada. Só a sua idade aparece para os outros." : "Só a sua idade aparece para os outros. É preciso ter 13 anos ou mais e não dá para mudar depois.";
+  accentSel = myProf.accent || null; drawSwatches();
+  fxSel = myProf.effect || null; drawFx();
+  emblemsSel = [...(myProf.emblems || [])]; drawEmblems();
+  themeSel = myProf.theme || null; drawTheme(); bannerFile = null; bannerRemove = false; $("bfile").value = ""; drawBannerPrev();
+  drawLinks();
+  const w = $("wear"); w.innerHTML = ""; w.append(new Option("Nenhuma", ""));
+  tagGroups.filter(g => g.tag && new Date(g.tag_expires) > Date.now()).forEach(g => w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
+  w.value = myProf.worn_group || ""; const none = w.options.length < 2; w.disabled = none;
+  $("wearh").textContent = none ? "Nenhum dos seus grupos tem tag ativa. O dono do grupo define a tag em Editar grupo." : "A tag aparece na frente do seu nome.";
 }
-$("pick").onclick=()=>$("file").click(); $("pav").onclick=()=>$("file").click();
-$("pav").onkeydown=e=>{ if(e.key==="Enter"||e.key===" ") $("file").click(); };
-$("file").onchange=()=>{ const f=$("file").files[0]; if(f){ $("perr").className="err ok"; $("perr").textContent="Foto escolhida: "+f.name+". Clique em Salvar perfil."; } };
-$("psave").onclick=async()=>{
-  const perr=$("perr"); perr.className="err"; perr.textContent="";
-  const upd={bio:$("pbio").value.trim(), status:$("pstatus").value.trim()||null}, name=$("pname").value.trim();
-  if(!$("pname").disabled&&name!==myProf.username){ if(!/^[A-Za-z0-9_]{3,20}$/.test(name)) return perr.textContent="Use 3 a 20 letras, números ou _"; upd.username=name; }
-  if(accentSel!==(myProf.accent||null)) upd.accent=accentSel;
-  if(fxSel!==(myProf.effect||null)) upd.effect=fxSel;
-  if(themeSel!==(myProf.theme||null)) upd.theme=themeSel;
-  if(JSON.stringify(emblemsSel)!==JSON.stringify(myProf.emblems||[])) upd.emblems=emblemsSel;
-  if(bannerRemove) upd.banner_url=null;
+$("pick").onclick = () => $("file").click();
+$("pav").onclick = () => $("file").click();
+$("pav").onkeydown = e => { if(e.key === "Enter" || e.key === " ") $("file").click(); };
+$("file").onchange = () => { const f = $("file").files[0]; if(f){ $("perr").className = "err ok"; $("perr").textContent = "Foto escolhida: " + f.name + ". Clique em Salvar perfil."; } };
+$("psave").onclick = async () => {
+  const perr = $("perr"); perr.className = "err"; perr.textContent = "";
+  const upd = {bio: $("pbio").value.trim(), status: $("pstatus").value.trim() || null}, name = $("pname").value.trim();
+  if(!$("pname").disabled && name !== myProf.username){
+    if(!/^[A-Za-z0-9_]{3,20}$/.test(name)) return perr.textContent = "Use de 3 a 20 letras, números ou _ no nome.";
+    upd.username = name;
+  }
+  if(accentSel !== (myProf.accent || null)) upd.accent = accentSel;
+  if(fxSel !== (myProf.effect || null)) upd.effect = fxSel;
+  if(themeSel !== (myProf.theme || null)) upd.theme = themeSel;
+  if(JSON.stringify(emblemsSel) !== JSON.stringify(myProf.emblems || [])) upd.emblems = emblemsSel;
+  if(bannerRemove) upd.banner_url = null;
   else if(bannerFile){
-    const prem=isPrem(me.id); let blob=bannerFile, ext="jpg";
-    if(prem){ ext={"image/gif":"gif","image/png":"png","image/jpeg":"jpg","image/webp":"webp"}[bannerFile.type]; if(!ext||bannerFile.size>5e6) return perr.textContent="Use PNG, JPG, WEBP ou GIF de até 5 MB."; }
-    else { if(!bannerFile.type.startsWith("image/")||bannerFile.size>8e6) return perr.textContent="Escolha imagem até 8 MB."; blob=await toStaticJpeg(bannerFile); if(!blob) return perr.textContent="Não foi possível ler imagem."; }
-    const path=`${me.id}/banner.${ext}`; const up=await sb.storage.from("banners").upload(path, blob, {upsert:true, contentType: prem?bannerFile.type:"image/jpeg"});
-    if(up.error) return perr.textContent="Não foi possível enviar banner."; upd.banner_url=sb.storage.from("banners").getPublicUrl(path).data.publicUrl+"?t="+Date.now();
+    const prem = isPrem(me.id); let blob = bannerFile, ext = "jpg";
+    if(prem){
+      ext = {"image/gif":"gif", "image/png":"png", "image/jpeg":"jpg", "image/webp":"webp"}[bannerFile.type];
+      if(!ext || bannerFile.size > 5e6) return perr.textContent = "Use PNG, JPG, WEBP ou GIF de até 5 MB.";
+    } else {
+      if(!bannerFile.type.startsWith("image/") || bannerFile.size > 8e6) return perr.textContent = "Escolha uma imagem de até 8 MB.";
+      blob = await toStaticJpeg(bannerFile); if(!blob) return perr.textContent = "Não foi possível ler essa imagem.";
+    }
+    const path = `${me.id}/banner.${ext}`;
+    const up = await sb.storage.from("banners").upload(path, blob, {upsert:true, contentType: prem ? bannerFile.type : "image/jpeg"});
+    if(up.error) return perr.textContent = "Não foi possível enviar o banner.";
+    upd.banner_url = sb.storage.from("banners").getPublicUrl(path).data.publicUrl + "?t=" + Date.now();
   }
-  if(!$("pbirth").disabled&&$("pbirth").value) upd.birthdate=$("pbirth").value;
-  const f=$("file").files[0];
-  if(f){ if(!f.type.startsWith("image/")||f.size>2e6) return perr.textContent="Imagem até 2 MB."; const up=await sb.storage.from("avatars").upload(me.id+"/avatar", f, {upsert:true, contentType:f.type}); if(up.error) return perr.textContent="Não foi possível enviar foto."; upd.avatar_url=sb.storage.from("avatars").getPublicUrl(me.id+"/avatar").data.publicUrl+"?t="+Date.now(); }
-  const {error}=await sb.from("profiles").update(upd).eq("id", me.id);
+  if(!$("pbirth").disabled && $("pbirth").value) upd.birthdate = $("pbirth").value;
+  const f = $("file").files[0];
+  if(f){
+    if(!f.type.startsWith("image/") || f.size > 2e6) return perr.textContent = "Escolha uma imagem de até 2 MB.";
+    const up = await sb.storage.from("avatars").upload(me.id + "/avatar", f, {upsert:true, contentType:f.type});
+    if(up.error) return perr.textContent = "Não foi possível enviar a foto.";
+    upd.avatar_url = sb.storage.from("avatars").getPublicUrl(me.id + "/avatar").data.publicUrl + "?t=" + Date.now();
+  }
+  const {error} = await sb.from("profiles").update(upd).eq("id", me.id);
   if(error){
-    const m=error.message||""; return perr.textContent=m.includes("name_locked")?"Você já trocou o nome esta semana.":m.includes("idade_minima")?"Precisa ter 13 anos.":m.includes("birthdate_locked")?"Data não pode ser alterada.":m.includes("emblem_bloqueado")?"Emblema bloqueado.":m.includes("effect_locked")?"Efeito bloqueado.":m.includes("premium_only")?"Cor livre só VIP.":error.code==="23505"?"Nome já em uso.":"Não foi possível salvar.";
+    const m = error.message || "";
+    return perr.textContent = m.includes("name_locked") ? "Você já trocou o nome esta semana." :
+      m.includes("idade_minima") ? "É preciso ter 13 anos ou mais para usar a Roda." :
+      m.includes("birthdate_locked") ? "A data de nascimento não pode ser alterada." :
+      m.includes("emblem_bloqueado") ? "Você ainda não tem um desses emblemas." :
+      m.includes("effect_locked") ? "Esse efeito ainda está bloqueado. Convide mais amigos para liberar." :
+      m.includes("premium_only") ? "Cor livre é exclusiva para VIPs." :
+      error.code === "23505" ? "Esse nome de usuário já está em uso." : "Não foi possível salvar.";
   }
-  if(($("wear").value||"")!==String(myProf.worn_group||"")){ const w=await sb.rpc("wear_group_tag", {gid: $("wear").value||null}); if(w.error) return perr.textContent="Tag não disponível."; await loadTags(); }
-  const lerr=await saveLinks(); const {data}=await sb.from("profiles").select(COLS).eq("id", me.id).single();
-  myProf=cache[me.id]=data; if(upd.birthdate) myBirth=upd.birthdate; $("file").value=""; drawMe(); drawProfile();
-  if(lerr){ perr.textContent="Perfil salvo, mas: "+lerr; return; } perr.className="err ok"; perr.textContent="Perfil salvo.";
+  if(($("wear").value || "") !== String(myProf.worn_group || "")){ const w = await sb.rpc("wear_group_tag", {gid: $("wear").value || null}); if(w.error) return perr.textContent = "Essa tag não está disponível."; await loadTags(); }
+  const lerr = await saveLinks();
+  const {data} = await sb.from("profiles").select(COLS).eq("id", me.id).single();
+  myProf = cache[me.id] = data; if(upd.birthdate) myBirth = upd.birthdate;
+  $("file").value = ""; drawMe(); drawProfile();
+  if(lerr){ perr.textContent = "Perfil salvo, mas: " + lerr; return; }
+  perr.className = "err ok"; perr.textContent = "Perfil salvo.";
 };
 if(REF){ $("refnote").classList.remove("hide"); $("swap").click(); }
 </script>
