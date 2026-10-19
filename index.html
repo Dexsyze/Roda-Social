@@ -530,7 +530,7 @@ async function openGroupDlg(g){
       if(geInput) geInput.disabled=false;
       sb.rpc("my_tag_trial_status").then(r=>{
         const s=r.data&&r.data[0];
-        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag. Grupo funciona normal sem tag.";
+        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag. Aproveite!";
         else if(!s.trial_used) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag.";
         else if(s.can_create) gi.textContent="VIP: tag permanente por 1 ano. Grupo funciona normal mesmo sem tag.";
         else gi.textContent=`Seu teste de 3 dias já foi usado e expirou. Grupo continua funcionando normal sem tag. VIP para criar novas tags.`;
