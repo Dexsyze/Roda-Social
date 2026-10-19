@@ -53,6 +53,11 @@ main{flex:1;min-width:0;display:flex;flex-direction:column}#chat{flex:1;min-heig
 @media (prefers-reduced-motion:reduce){.av.fx-ring,.fx-gradient,.fx-glow,.pcard.fx-aurora .ptop{animation:none}}
 .bprev{height:96px;border-radius:12px;border:1px solid var(--line);background:var(--side) center/cover no-repeat;display:grid;place-items:center;color:var(--muted);font-size:.9rem}.lbl{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:2px}.psec{margin-top:14px;min-width:0}.psec p{margin:0;overflow-wrap:anywhere}.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 18px}.emb{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}#pcemb span{background:var(--side);border:1px solid var(--line);border-radius:10px;padding:3px 9px;font-size:1.1rem}
 @keyframes pop{0%{transform:scale(.3) rotate(-12deg);opacity:0}60%{transform:scale(1.2) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}.rwd-e{font-size:4.5rem;line-height:1.2;animation:pop .7s ease-out}@media (prefers-reduced-motion:reduce){.rwd-e{animation:none}}
+
+/* TAGS DESATIVADAS - EM BREVE */
+#gtagw{display:none !important}
+#gtaginfo::after{content:" Tags em breve (VIP)"; color:var(--muted); font-size:.8rem; display:block; margin-top:4px}
+
 </style>
 </head>
 <body>
@@ -128,6 +133,7 @@ let groups=[], myGroups=new Set(), users=[], fr={}, tags={}; const cache={}, see
 let REF=""; try{REF=(new URLSearchParams(location.search).get("ref")||localStorage.getItem("roda_ref")||"").toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12); if(REF) localStorage.setItem("roda_ref",REF);}catch{}
 const el = (tag, text, cls) => Object.assign(document.createElement(tag), {textContent: text || "", className: cls || ""});
 const toast = t => { const d=$("toast"); d.textContent=t; d.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>d.classList.remove("on"),2800); };
+
 async function getProf(id){
   if(cache[id]) return cache[id];
   try{
@@ -336,6 +342,7 @@ async function deleteMessage(m, table, rowEl){
   }
   toast("Mensagem apagada.");
 }
+
 function pickRx(table, id, anchor){
   const old=document.getElementById("rxpick"); if(old) old.remove();
   const box=el("div","", "rx"); box.id="rxpick";
@@ -476,7 +483,7 @@ async function openGroupDlg(g){
   $("gpriv").checked=gg?gg.is_private:false;
   $("gicon").value=gg&&gg.icon?gg.icon:"";
   const gc=$("gtagc"); if(gc) gc.value=gg&&/^#[0-9a-f]{6}$/i.test(gg.tag_color||"")?gg.tag_color:"#8b73ff";
-  const gw=$("gtagw"); if(gw) gw.classList.toggle("hide",!(gg&&gg.owner_id===me.id));
+  // tags desativadas - em breve
   const gt=$("gtag"); if(gt) gt.value=gg&&gg.tag?gg.tag:"";
   const ge=$("gtagemoji"); if(ge) ge.value=gg&&gg.tag_emoji?gg.tag_emoji:"";
   const gi=$("gtaginfo");
@@ -528,7 +535,7 @@ async function openGroupDlg(g){
       if(geInput) geInput.disabled=false;
       sb.rpc("my_tag_trial_status").then(r=>{
         const s=r.data&&r.data[0];
-        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag. Grupo funciona normal sem tag.";
+        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag. Aproveite!";
         else if(!s.trial_used) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag.";
         else if(s.can_create) gi.textContent="VIP: tag permanente por 1 ano. Grupo funciona normal mesmo sem tag.";
         else gi.textContent=`Seu teste de 3 dias já foi usado e expirou. Grupo continua funcionando normal sem tag. VIP para criar novas tags.`;
@@ -584,52 +591,16 @@ $("gmembers").onclick=async()=>{
 $("gcancel").onclick=()=>$("gdlg").close();
 $("gok").onclick=async()=>{
   const name=$("gname").value.trim(); if(name.length<3) return $("gerr").textContent="Nome precisa ter pelo menos 3 letras.";
-  const nt=$("gtag")?$("gtag").value.trim().toUpperCase():"";
-  const nc=$("gtagc")?$("gtagc").value:null;
-  const ne=$("gtagemoji")?$("gtagemoji").value.trim():"";
-  if(nt && !/^[A-Z0-9]{2,4}$/.test(nt)) return $("gerr").textContent="Tag 2 a 4 letras/números.";
   if(editing){
-    const er=await sb.rpc("edit_group", {gid: editing.id, new_name: name, new_desc: $("gdesc").value.trim(), new_priv: $("gpriv").checked, new_icon: $("gicon").value.trim()||null, new_color: nc});
-    if(er.error) return $("gerr").textContent="Não foi possível salvar. Rode o SQL novo no Supabase. "+er.error.message;
-    // salva tag se mudou
-    if(nt!== (editing.tag||"").toUpperCase()){
-      if(nt){
-        const t=await sb.rpc("set_group_tag", {gid: editing.id, new_tag: nt, new_color: nc, new_emoji: ne||null});
-        if(t.error){ const m=t.error.message; return $("gerr").textContent=m.includes("tag_invalida")?"Tag 2 a 4 letras/números.":m.includes("tag_em_uso")?"Tag já em uso por outro grupo.":m.includes("tag_limite")?"Você já tem outro grupo com tag ativa.":m.includes("tag_paga")?"Seu teste grátis de 2 dias já foi usado.":"Não foi possível salvar tag: "+m; }
-      } else {
-        // remove tag se deixou vazio
-        const rt=await sb.from("groups").update({tag:null, tag_expires:null, tag_color:null, tag_emoji:null}).eq("id", editing.id);
-        if(rt.error) return $("gerr").textContent="Erro ao remover tag: "+rt.error.message;
-      }
-    } else if(nt){
-      // só atualizou cor/emoji
-      const upd={tag_color: nc, tag_emoji: ne||null};
-      await sb.from("groups").update(upd).eq("id", editing.id);
-    }
-    const {data: fresh}=await sb.from("groups").select(GCOLS).eq("id", editing.id).single();
-    await loadTags(); $("gdlg").close(); await loadGroups(); 
-    if(nt && nt!==(editing.tag||"")) toast("Tag ["+nt+"] salva!");
-    else toast("Grupo salvo.");
-    return openGroup(fresh||fresh);
+    const er=await sb.rpc("edit_group", {gid: editing.id, new_name: name, new_desc: $("gdesc").value.trim(), new_priv: $("gpriv").checked, new_icon: $("gicon").value.trim()||null, new_color: "#8b73ff"});
+    if(er.error) return $("gerr").textContent="Não foi possível salvar. "+er.error.message;
+    const {data}=await sb.from("groups").select(GCOLS).eq("id", editing.id).single();
+    $("gdlg").close(); await loadGroups(); return openGroup(data);
   }
-  // CRIANDO NOVO GRUPO
   const {data, error}=await sb.from("groups").insert({name, description:$("gdesc").value.trim(), owner_id: me.id, is_private:$("gpriv").checked, ...($("gicon").value.trim()?{icon:$("gicon").value.trim()}:{})}).select(GCOLS).single();
-  if(error) return $("gerr").textContent="Não foi possível criar o grupo: "+error.message;
+  if(error) return $("gerr").textContent="Não foi possível criar o grupo.";
   await sb.from("group_members").insert({group_id: data.id, user_id: me.id});
-  if(nt){
-    const t=await sb.rpc("set_group_tag", {gid: data.id, new_tag: nt, new_color: nc, new_emoji: ne||null});
-    if(t.error){
-      $("gdlg").close(); await loadGroups(); openGroup(data);
-      return toast("Grupo criado, mas tag não foi: "+t.error.message);
-    }
-  }
-  $("gdlg").close(); 
-  const gt=$("gtag"); if(gt) gt.value=""; const ge=$("gtagemoji"); if(ge) ge.value="";
-  $("gname").value=$("gdesc").value=$("gicon").value=""; $("gpriv").checked=false; 
-  await loadGroups(); 
-  const {data: fresh2}=await sb.from("groups").select(GCOLS).eq("id", data.id).single();
-  openGroup(fresh2||data);
-  if(nt) toast("Grupo ["+nt+"] criado!");
+  $("gdlg").close(); $("gname").value=$("gdesc").value=$("gicon").value=""; $("gpriv").checked=false; await loadGroups(); openGroup(data);
 };
 $("join").onclick=async()=>{ const {error}=await sb.from("group_members").insert({group_id: ctx.id, user_id: me.id}); if(error) return toast("Não foi possível entrar."); const g=ctx.g; await loadGroups(); openGroup(g); };
 $("leave").onclick=async()=>{ if(!confirm("Sair deste grupo?")) return; await sb.from("group_members").delete().eq("group_id", ctx.id).eq("user_id", me.id); await loadGroups(); openGlobal(); };
