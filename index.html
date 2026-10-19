@@ -91,6 +91,14 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
 #fxlist{display:flex;flex-wrap:wrap;gap:8px}.fxb[aria-pressed="true"]{border-color:var(--brand);background:var(--mine)}
 @media (prefers-reduced-motion:reduce){.av.fx-ring,.fx-gradient,.fx-glow,.pcard.fx-aurora .ptop{animation:none}}
 .bprev{height:96px;border-radius:12px;border:1px solid var(--line);background:var(--side) center/cover no-repeat;display:grid;place-items:center;color:var(--muted);font-size:.9rem}
+.lbl{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:2px}
+.psec{margin-top:14px;min-width:0}.psec p{margin:0;overflow-wrap:anywhere}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0 18px}
+.emb{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+#pcemb span{background:var(--side);border:1px solid var(--line);border-radius:10px;padding:3px 9px;font-size:1.1rem}
+@keyframes pop{0%{transform:scale(.3) rotate(-12deg);opacity:0}60%{transform:scale(1.2) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.rwd-e{font-size:4.5rem;line-height:1.2;animation:pop .7s ease-out}
+@media (prefers-reduced-motion:reduce){.rwd-e{animation:none}}
 </style>
 </head>
 <body>
@@ -160,6 +168,9 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
         <label>Efeito animado</label>
         <div id="fxlist"></div>
         <p class="hint" id="fxhint"></p>
+        <label>Emblemas (até 3)</label>
+        <div class="emb" id="emblist"></div>
+        <p class="hint" id="embhint"></p>
         <label>Banner do perfil</label>
         <div class="bprev" id="bprev"></div>
         <input type="file" id="bfile" accept="image/png,image/jpeg,image/webp,image/gif" class="hide">
@@ -197,12 +208,25 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
     <div class="pbody">
       <div id="pcav"></div>
       <h2 id="pcname"></h2>
-      <div class="hint" id="pcmeta"></div>
-      <p id="pcbio" style="overflow-wrap:anywhere"></p>
-      <div class="hint" id="pcinv"></div>
+      <div class="hint" id="pcstatus"></div>
+      <div class="emb hide" id="pcemb"></div>
+      <div class="psec" id="pcbiow"><div class="lbl">Sobre mim</div><p id="pcbio"></p></div>
+      <div class="pgrid">
+        <div class="psec"><div class="lbl">Membro desde</div><div id="pcsince"></div></div>
+        <div class="psec" id="pcagew"><div class="lbl">Idade</div><div id="pcage"></div></div>
+        <div class="psec" id="pcinvw"><div class="lbl">Convidou</div><div id="pcinv"></div></div>
+      </div>
       <div class="row"><button id="pcdm"></button><button class="ghost" id="pcfr">Adicionar amigo</button><button class="ghost" id="pcx">Fechar</button></div>
     </div>
   </div>
+</dialog>
+
+<dialog id="rdlg" style="text-align:center">
+  <p class="hint" style="margin-top:0">Você ganhou</p>
+  <div class="rwd-e" id="rwdE"></div>
+  <h2 id="rwdN" style="margin:6px 0 2px"></h2>
+  <div id="rwdR" style="font-weight:700"></div>
+  <div class="row"><button class="ghost" id="rwdClose">Fechar</button><button id="rwdGo">Ver minha coleção</button></div>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -210,7 +234,7 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
 <script>
 // Cole aqui a chave PUBLICÁVEL do Supabase (começa com sb_publishable_). NUNCA a secret nem a service_role.
 const SUPABASE_URL = "https://pqmyrtywtgukcdmkzuax.supabase.co";
-const SUPABASE_KEY = "sb_publishable_UA0xjaueCE3NKpn4Nr_B_A_ES_RvK-w";
+const SUPABASE_KEY = "COLE_A_CHAVE_PUBLICAVEL_AQUI";
 
 (function guard(){ // trava: se uma chave secreta for colada por engano, o site recusa rodar
   let bad = SUPABASE_KEY.startsWith("sb_secret_");
@@ -219,7 +243,7 @@ const SUPABASE_KEY = "sb_publishable_UA0xjaueCE3NKpn4Nr_B_A_ES_RvK-w";
 })();
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme";
+const COLS = "id,username,bio,avatar_url,created_at,name_changed_at,accent,status,effect,banner_url,theme,emblems";
 const GCOLS = "id,name,description,owner_id,created_at,is_private";
 const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"], founder:["FUNDADOR","#ff9f43"]};
 const PREM = ["admin","founder","donor","vip"], ORDER = ["admin","founder","mod","vip","donor"], FREE = ["#8b73ff","#4cd9a0","#5aa9ff","#ff8a5b"], WEEK = 7 * 864e5;
@@ -291,7 +315,7 @@ async function start(){
   if(started) return; started = true;
   $("auth").classList.add("hide"); $("app").classList.remove("hide");
   myProf = await getProf(me.id); await loadTags(); drawMe();
-  await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly()]);
+  await Promise.all([loadGroups(), loadFriends(), loadUsers(""), loadWeekly(), loadItems()]);
   const inv = new URLSearchParams(location.search).get("convite");
   if(!(inv && await useInvite(inv.toLowerCase()))) openGlobal();
   const rt = (table, match) => sb.channel(table).on("postgres_changes",{event:"INSERT",schema:"public",table}, e => { if(match(e.new)) addMsg(e.new, table) }).subscribe();
@@ -489,21 +513,48 @@ $("inviteSite").onclick = async () => {
   try{ await navigator.clipboard.writeText(url); toast("Seu link de convite foi copiado. Quem criar conta por ele libera efeitos no seu perfil."); } catch{ prompt("Copie o link do site:", url); }
 };
 
-// ---------- recompensa semanal ----------
-let myStreak = 0, weeklyClaimed = false;
+// ---------- recompensa semanal: itens colecionáveis ----------
+let weeklyClaimed = false, ITEMS = {}, owned = new Set(), emblemsSel = [];
+const RAR = {common: ["Comum", "#9aa7c7"], rare: ["Raro", "#5aa9ff"], epic: ["Épico", "#c084ff"]};
+async function loadItems(){
+  const [c, o] = await Promise.all([sb.from("items").select("*"), sb.from("user_items").select("item_id")]);
+  ITEMS = Object.fromEntries((c.data || []).map(i => [i.id, i])); owned = new Set((o.data || []).map(x => x.item_id));
+}
 async function loadWeekly(){
-  const {data} = await sb.rpc("weekly_status"), w = (data && data[0]) || {streak: 0, claimed: false};
-  myStreak = w.streak; weeklyClaimed = w.claimed; drawWeekly();
+  const {data} = await sb.rpc("weekly_status"); weeklyClaimed = !!(data && data[0] && data[0].claimed); drawWeekly();
 }
 function drawWeekly(){
-  const b = $("weekly"); b.textContent = weeklyClaimed ? `✓ Semana resgatada · 🔥 ${myStreak}` : "🎁 Resgatar recompensa da semana";
+  const b = $("weekly"); b.textContent = weeklyClaimed ? "✓ Recompensa da semana resgatada" : "🎁 Resgatar recompensa da semana";
   b.style.fontWeight = weeklyClaimed ? 500 : 800; b.style.color = weeklyClaimed ? "var(--muted)" : "var(--brand)";
 }
 $("weekly").onclick = async () => {
   if(weeklyClaimed) return toast("Você já resgatou esta semana. Volte na segunda-feira!");
   const {data, error} = await sb.rpc("claim_weekly"); if(error) return toast("Não foi possível resgatar agora.");
-  await loadWeekly(); toast(`Recompensa resgatada! 🔥 ${data} ${data === 1 ? "semana seguida" : "semanas seguidas"}.`);
+  await Promise.all([loadWeekly(), loadItems()]);
+  if(!data) return toast("Você já tem todos os itens da coleção! 🎉");
+  const r = RAR[data.rarity] || RAR.common;
+  $("rwdE").textContent = data.emoji; $("rwdN").textContent = data.name;
+  $("rwdR").textContent = r[0] + " · " + (data.kind === "effect" ? "Efeito de perfil" : "Emblema"); $("rwdR").style.color = r[1];
+  $("rdlg").showModal();
 };
+$("rwdClose").onclick = () => $("rdlg").close();
+$("rwdGo").onclick = () => { $("rdlg").close(); $("meBtn").click(); };
+function drawEmblems(){
+  const box = $("emblist"); box.innerHTML = "";
+  Object.values(ITEMS).filter(i => i.kind === "emblem").forEach(i => {
+    const has = owned.has(i.id), on = emblemsSel.includes(i.id), b = el("button", has ? i.emoji : "🔒", "ghost fxb");
+    b.type = "button"; b.disabled = !has; b.title = b.ariaLabel = has ? i.name : "Emblema bloqueado"; b.style.fontSize = "1.2rem"; b.setAttribute("aria-pressed", on);
+    b.onclick = () => {
+      if(on) emblemsSel = emblemsSel.filter(x => x !== i.id);
+      else if(emblemsSel.length < 3) emblemsSel = [...emblemsSel, i.id];
+      else return toast("Você pode usar até 3 emblemas.");
+      drawEmblems();
+    };
+    box.append(b);
+  });
+  const n = [...owned].filter(id => ITEMS[id]).length;
+  $("embhint").textContent = `Coleção: ${n} de ${Object.keys(ITEMS).length} itens. Resgate a recompensa da semana para ganhar mais.`;
+}
 
 // ---------- cartão de perfil e efeitos ----------
 function safeBanner(p){
@@ -513,15 +564,19 @@ function safeBanner(p){
 }
 async function showProfile(p){
   p = cache[p.id] || p;
-  const [a, v, w] = await Promise.all([sb.rpc("age_of", {p: p.id}), sb.rpc("invites_of", {uid: p.id}), sb.rpc("streak_of", {uid: p.id})]);
-  const age = a.data, inv = v.data || 0, wk = w.data || 0, mine = p.id === me.id, bn = safeBanner(p);
+  const [a, v] = await Promise.all([sb.rpc("age_of", {p: p.id}), sb.rpc("invites_of", {uid: p.id})]);
+  const age = a.data, inv = v.data || 0, mine = p.id === me.id, bn = safeBanner(p);
   $("pcard").className = "pcard" + (p.effect === "aurora" ? " fx-aurora" : "");
   $("pcard").style.background = /^#[0-9a-f]{6}$/i.test(p.theme || "") ? `linear-gradient(180deg, ${p.theme}cc, var(--panel) 78%)` : "";
   $("pctop").style.backgroundImage = bn ? `url("${bn}")` : ""; $("pctop").style.backgroundSize = bn ? "cover" : ""; $("pctop").style.backgroundPosition = "center";
   $("pcav").replaceChildren(avatar(p)); $("pcname").replaceChildren(nameEl(p));
-  $("pcmeta").textContent = [age ? age + " anos" : "", "na Roda desde " + new Date(p.created_at).toLocaleDateString("pt-BR",{month:"short", year:"numeric"}), p.status || ""].filter(Boolean).join(" · ");
-  $("pcbio").textContent = p.bio || ""; $("pcbio").classList.toggle("hide", !p.bio);
-  $("pcinv").textContent = [wk ? `🔥 ${wk} ${wk === 1 ? "semana seguida" : "semanas seguidas"}` : "", inv ? `Convidou ${inv} ${inv === 1 ? "pessoa" : "pessoas"}` : ""].filter(Boolean).join(" · ");
+  $("pcstatus").textContent = p.status || ""; $("pcstatus").classList.toggle("hide", !p.status);
+  const emb = (p.emblems || []).map(id => ITEMS[id]).filter(Boolean), eb = $("pcemb"); eb.innerHTML = "";
+  emb.forEach(i => { const s = el("span", i.emoji); s.title = i.name; eb.append(s); }); eb.classList.toggle("hide", !emb.length);
+  $("pcbio").textContent = p.bio || ""; $("pcbiow").classList.toggle("hide", !p.bio);
+  $("pcsince").textContent = new Date(p.created_at).toLocaleDateString("pt-BR", {day:"numeric", month:"long", year:"numeric"});
+  $("pcage").textContent = age ? age + " anos" : ""; $("pcagew").classList.toggle("hide", !age);
+  $("pcinv").textContent = inv ? `${inv} ${inv === 1 ? "pessoa" : "pessoas"}` : ""; $("pcinvw").classList.toggle("hide", !inv);
   $("pcdm").textContent = mine ? "Editar meu perfil" : "Enviar mensagem";
   $("pcdm").onclick = () => { $("pdlg").close(); if(mine) $("meBtn").click(); else openDm(p, null); };
   $("pcfr").classList.toggle("hide", mine || !!fr[p.id]);
@@ -529,17 +584,17 @@ async function showProfile(p){
   $("pdlg").showModal();
 }
 $("pcx").onclick = () => $("pdlg").close();
-const FX = [[null, "Nenhum", 0, 0], ["ring", "Anel animado", 1, 2], ["gradient", "Nome em degradê", 3, 4], ["glow", "Brilho no nome", 5, 8], ["aurora", "Perfil aurora", 10, 12]];
+const FX = [[null, "Nenhum", 0], ["ring", "Anel animado", 1], ["gradient", "Nome em degradê", 3], ["glow", "Brilho no nome", 5], ["aurora", "Perfil aurora", 10]];
 let fxSel = null, myInv = 0, themeSel = null, bannerFile = null, bannerRemove = false;
 const THEMES = ["#3a2a8f", "#0f5c4a", "#1b3f8a", "#7a1d1d"], PLUS = "Roda Plus"; // troque PLUS pelo nome que você escolher
 function drawFx(){
   const prem = isPrem(me.id), box = $("fxlist"); box.innerHTML = "";
-  FX.forEach(([id, label, inv, wk]) => {
-    const ok = !inv || prem || myInv >= inv || myStreak >= wk;
-    const b = el("button", label + (ok ? "" : ` · ${inv} ${inv === 1 ? "convite" : "convites"} ou ${wk} semanas seguidas`), "ghost fxb");
+  FX.forEach(([id, label, inv]) => {
+    const ok = !inv || prem || myInv >= inv || owned.has("fx_" + id);
+    const b = el("button", label + (ok ? "" : ` · ${inv} ${inv === 1 ? "convite" : "convites"} ou na recompensa da semana`), "ghost fxb");
     b.type = "button"; b.disabled = !ok; b.setAttribute("aria-pressed", id === fxSel); b.onclick = () => { fxSel = id; drawFx(); }; box.append(b);
   });
-  $("fxhint").textContent = `Você convidou ${myInv} ${myInv === 1 ? "pessoa" : "pessoas"} e está com ${myStreak} ${myStreak === 1 ? "semana seguida" : "semanas seguidas"}. Resgate a recompensa toda semana e convide amigos para liberar mais. Membros do ${PLUS} têm todos liberados.`;
+  $("fxhint").textContent = `Você convidou ${myInv} ${myInv === 1 ? "pessoa" : "pessoas"}. Efeitos também podem vir na recompensa da semana. Membros do ${PLUS} têm todos liberados.`;
 }
 function drawTheme(){
   const box = $("tswatches"); box.innerHTML = "";
@@ -569,7 +624,7 @@ async function toStaticJpeg(f){ // para quem não tem o Plus: pega só o primeir
 // ---------- perfil ----------
 $("meBtn").onclick = async () => {
   show("profile"); mark(null); closeSide(); $("perr").textContent = "";
-  const [b, i] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id})]); myBirth = b.data; myInv = i.data || 0; drawProfile();
+  const [b, i] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id}), loadItems()]); myBirth = b.data; myInv = i.data || 0; drawProfile();
 };
 function drawSwatches(){
   const box = $("swatches"); box.innerHTML = "";
@@ -595,6 +650,7 @@ function drawProfile(){
   $("bhint").textContent = myBirth ? "A data de nascimento não pode ser alterada. Só a sua idade aparece para os outros." : "Só a sua idade aparece para os outros. É preciso ter 13 anos ou mais e não dá para mudar depois.";
   accentSel = myProf.accent || null; drawSwatches();
   fxSel = myProf.effect || null; drawFx();
+  emblemsSel = [...(myProf.emblems || [])]; drawEmblems();
   themeSel = myProf.theme || null; drawTheme(); bannerFile = null; bannerRemove = false; $("bfile").value = ""; drawBannerPrev();
 }
 $("pick").onclick = () => $("file").click();
@@ -611,6 +667,7 @@ $("psave").onclick = async () => {
   if(accentSel !== (myProf.accent || null)) upd.accent = accentSel;
   if(fxSel !== (myProf.effect || null)) upd.effect = fxSel;
   if(themeSel !== (myProf.theme || null)) upd.theme = themeSel;
+  if(JSON.stringify(emblemsSel) !== JSON.stringify(myProf.emblems || [])) upd.emblems = emblemsSel;
   if(bannerRemove) upd.banner_url = null;
   else if(bannerFile){
     const prem = isPrem(me.id); let blob = bannerFile, ext = "jpg";
@@ -640,6 +697,7 @@ $("psave").onclick = async () => {
     return perr.textContent = m.includes("name_locked") ? "Você já trocou o nome esta semana." :
       m.includes("idade_minima") ? "É preciso ter 13 anos ou mais para usar a Roda." :
       m.includes("birthdate_locked") ? "A data de nascimento não pode ser alterada." :
+      m.includes("emblem_bloqueado") ? "Você ainda não tem um desses emblemas." :
       m.includes("effect_locked") ? "Esse efeito ainda está bloqueado. Convide mais amigos para liberar." :
       m.includes("premium_only") ? "Cor livre é exclusiva para doadores e VIPs." :
       error.code === "23505" ? "Esse nome de usuário já está em uso." : "Não foi possível salvar.";
