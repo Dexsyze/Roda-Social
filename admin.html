@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Roda · Admin</title>
+<link rel="icon" href="logo.png" type="image/png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#09090f;--side:#0d0d16;--panel:#13131f;--ink:#ececf8;--muted:#8a8aaa;--brand:#8b73ff;--line:#23233a;--bad:#ff6b9a;--ok:#4cd9a0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input{font:inherit;color:inherit}
+input{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--side)}
+button{cursor:pointer;border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:#fff;font-weight:600}
+button.ghost{background:transparent;border:1.5px solid var(--line)}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.hide{display:none!important}
+.err{color:var(--bad);min-height:1.3em;margin:6px 0}.hint{color:var(--muted)}
+.box{width:min(380px,92%);margin:12vh auto 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px}
+.box h1{margin:0 0 14px}.box input{margin-bottom:10px}
+#panel{max-width:760px;margin:0 auto;padding:20px 16px}
+.bar{display:flex;gap:12px;align-items:center;margin-bottom:14px}.bar h1{margin:0 auto 0 0;font-size:1.3rem}
+.user{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.av{width:38px;height:38px;border-radius:50%;background:var(--brand);display:grid;place-items:center;font-weight:700;overflow:hidden;flex-shrink:0}
+.av img{width:100%;height:100%;object-fit:cover}
+.user .nm{flex:1;min-width:120px;font-weight:700;overflow-wrap:anywhere}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{padding:5px 10px;font-size:.78rem;font-weight:800;background:transparent;border:1.5px solid var(--line);color:var(--muted)}
+.chip[aria-pressed="true"]{color:var(--c);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+</style>
+</head>
+<body>
+
+<div class="box" id="login">
+  <h1>Roda · Admin</h1>
+  <input id="email" type="email" placeholder="E-mail" autocomplete="email">
+  <input id="pass" type="password" placeholder="Senha" autocomplete="current-password">
+  <p class="err" id="lerr" role="alert"></p>
+  <button id="go" style="width:100%">Entrar</button>
+</div>
+
+<div class="box hide" id="denied">
+  <h1>Sem acesso</h1>
+  <p class="hint">Esta conta não tem a tag de ADM.</p>
+  <button class="ghost" id="out2" style="width:100%">Sair</button>
+</div>
+
+<div id="panel" class="hide">
+  <div class="bar"><h1>Roda · Admin</h1><button class="ghost" id="out">Sair</button></div>
+  <input id="search" placeholder="Buscar pessoa pelo nome de usuário" aria-label="Buscar pessoa">
+  <p class="err" id="perr" role="alert"></p>
+  <div id="list"></div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://pqmyrtywtgukcdmkzuax.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbXlydHl3dGd1a2NkbWt6dWF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjM2MTAxNywiZXhwIjoyMTA3OTM3MDE3fQ.M6XJ8hstRY-etmkdpdGZjgd2MMIN36Wy5jEWgL1Up0A";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const TAGS = {admin:["ADM","#ff5c7a"], mod:["MOD","#4cd9a0"], vip:["VIP","#b48cff"], donor:["DOADOR","#f4b531"]};
+let me, tags = {}, entered = false;
+
+$("go").onclick = async () => {
+  $("lerr").textContent = "";
+  const {error} = await sb.auth.signInWithPassword({email: $("email").value.trim(), password: $("pass").value});
+  if(error) $("lerr").textContent = "E-mail ou senha incorretos.";
+};
+const signOut = () => sb.auth.signOut();
+$("out").onclick = $("out2").onclick = signOut;
+sb.auth.onAuthStateChange((_e, s) => { if(s){ me = s.user; enter(); } else { location.reload(); } });
+
+async function loadTags(){
+  const {data} = await sb.from("user_tags").select("*"); tags = {};
+  (data || []).forEach(t => (tags[t.user_id] ||= new Set()).add(t.tag));
+}
+async function enter(){
+  if(entered) return; entered = true;
+  $("login").classList.add("hide"); await loadTags();
+  if(!tags[me.id] || !tags[me.id].has("admin")) return $("denied").classList.remove("hide");
+  $("panel").classList.remove("hide"); loadUsers("");
+}
+async function loadUsers(q){
+  let req = sb.from("profiles").select("id,username,avatar_url").order("created_at",{ascending:false}).limit(100);
+  if(q) req = req.ilike("username", "%" + q + "%");
+  const {data} = await req, box = $("list"); box.innerHTML = "";
+  if(!data || !data.length) return box.append(Object.assign(document.createElement("p"), {className:"hint", textContent:"Ninguém encontrado."}));
+  data.forEach(p => box.append(row(p)));
+}
+function row(p){
+  const r = document.createElement("div"); r.className = "user";
+  const av = document.createElement("div"); av.className = "av";
+  if(p.avatar_url){ const i = document.createElement("img"); i.src = p.avatar_url; i.alt = ""; av.append(i); } else av.textContent = (p.username || "?")[0].toUpperCase();
+  
+  const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = p.username;
+  
+  const chips = document.createElement("div"); chips.className = "chips";
+  Object.keys(TAGS).forEach(t => {
+    const on = !!(tags[p.id] && tags[p.id].has(t)), b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = TAGS[t][0]; b.style.setProperty("--c", TAGS[t][1]);
+    b.setAttribute("aria-pressed", on);
+    b.onclick = () => toggle(p, t, on); chips.append(b);
+  });
+
+  // Botão de Moderação: Renomear usuário
+  const renameBtn = document.createElement("button");
+  renameBtn.className = "chip"; renameBtn.type = "button"; renameBtn.textContent = "✏️ Renomear"; renameBtn.style.setProperty("--c", "#5aa9ff");
+  renameBtn.onclick = () => renameUser(p);
+  chips.append(renameBtn);
+
+  r.append(av, nm, chips); return r;
+}
+
+async function renameUser(p) {
+  const newName = prompt(`Digite o novo nome de usuário para "${p.username}":`, p.username);
+  if (!newName || newName.trim() === "" || newName === p.username) return;
+
+  $("perr").textContent = "";
+  const { error } = await sb.from("profiles").update({ username: newName.trim() }).eq("id", p.id);
+
+  if (error) {
+    $("perr").textContent = "Erro ao renomear: " + error.message;
+  } else {
+    $("perr").textContent = `Usuário renomeado para "${newName.trim()}" com sucesso!`;
+    setTimeout(() => { $("perr").textContent = ""; }, 3000);
+    loadUsers($("search").value.trim());
+  }
+}
+
+async function toggle(p, t, on){
+  $("perr").textContent = "";
+  if(on && p.id === me.id && t === "admin") return $("perr").textContent = "Você não pode tirar a sua própria tag de ADM.";
+  const r = on ? await sb.from("user_tags").delete().eq("user_id", p.id).eq("tag", t)
+               : await sb.from("user_tags").insert({user_id: p.id, tag: t});
+  if(r.error) return $("perr").textContent = "Não foi possível salvar a tag.";
+  await loadTags(); loadUsers($("search").value.trim());
+}
+let st; $("search").oninput = e => { clearTimeout(st); st = setTimeout(() => loadUsers(e.target.value.trim()), 250); };
+</script>
+</body>
+</html>
