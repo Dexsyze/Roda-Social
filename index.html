@@ -151,14 +151,30 @@ function avatar(p){
   if(p.avatar_url){const i=document.createElement("img"); i.src=p.avatar_url; i.alt=""; d.append(i)}
   else d.textContent=(p.username||"?")[0].toUpperCase(); return d;
 }
-function nameEl(p, full){
+function nameEl(p, full, override){
   const w=el("span","", "nm"), s=el("strong", p.username||"?");
-  if(gtags[p.id] && gtags[p.id] !== "?" && gtags[p.id].length >= 2){ const g=el("span", gtags[p.id], "gtg"); if(/^#[0-9a-f]{6}$/i.test(gcol[p.id]||"")) g.style.color=gcol[p.id]; w.append(g); }
+  let otag=null, ocol=null;
+  if(override && override.tag){ otag=override.tag; ocol=override.color; }
+  else if(gtags[p.id] && gtags[p.id] !== "?" && gtags[p.id].length >= 2){ otag=gtags[p.id]; ocol=gcol[p.id]; }
+  if(otag && otag !== "?" && otag.length >= 2){
+    const g=el("span", otag, "gtg");
+    if(/^#[0-9a-f]{6}$/i.test(ocol||"")) g.style.color=ocol;
+    w.append(g);
+  }
   if(/^#[0-9a-f]{6}$/i.test(p.accent||"")) s.style.color=p.accent;
   if(p.effect==="gradient"||p.effect==="glow") s.classList.add("fx-"+p.effect);
   w.append(s);
   const rl=(tags[p.id]||[]).filter(t=>TAGS[t]); (full?rl:rl.slice(0,1)).forEach(t=>{const x=el("span",TAGS[t][0],"tag"); x.style.color=TAGS[t][1]; w.append(x);});
   return w;
+}
+function getGroupTagOverride(groupId){
+  try{
+    const gg = groups.find(x=> String(x.id)===String(groupId)) || (ctx.type==="group" && ctx.g ? ctx.g : null);
+    if(gg && gg.tag && gg.tag !== "?" && gg.tag_expires && new Date(gg.tag_expires) > Date.now()){
+      return {tag: gg.tag, color: gg.tag_color||null};
+    }
+  }catch{}
+  return null;
 }
 function clickName(p){ const n=nameEl(p); n.style.cursor="pointer"; n.onclick=()=>showProfile(p); return n; }
 async function loadTags(){
@@ -224,13 +240,25 @@ async function addMsg(m, table){
     const f=$("feed"); f.querySelector(".empty")?.remove(); f.append(row); f.scrollTop=f.scrollHeight; return;
   }
   const p=await getProf(m.sender_id||m.user_id);
-  const row=el("div","", "msg"+(p.id===me.id?" me":"")), b=el("div","", "b"), h=el("div");
-  const nm=nameEl(p), av=avatar(p); nm.onclick=av.onclick=()=>showProfile(p); nm.style.cursor=av.style.cursor="pointer";
+  const row=el("div","", "msg"+(p.id===me.id?" me":"")); row.dataset.mid=String(m.id); const b=el("div","", "b"), h=el("div");
+  // tag por grupo tipo Discord: dentro do grupo mostra a tag daquele grupo
+  let tagOverride=null;
+  if(table==="group_messages"){
+    tagOverride = getGroupTagOverride(m.group_id);
+  }
+  const nm=nameEl(p, false, tagOverride), av=avatar(p); nm.onclick=av.onclick=()=>showProfile(p); nm.style.cursor=av.style.cursor="pointer";
   h.append(nm, el("small", new Date(m.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})));
   const id=String(m.id), act=el("span","", "act2");
   const rb=el("button","↩"); rb.type="button"; rb.title="Responder"; rb.onclick=()=>setReply(p.username, m.content);
   const eb=el("button","😊"); eb.type="button"; eb.title="Reagir"; eb.onclick=()=>pickRx(table, id, eb);
-  act.append(rb, eb); h.append(act); b.append(h);
+  act.append(rb, eb);
+  // apagar mensagem - dono ou ADM/MOD ou dono do grupo
+  const canDel = p.id===me.id || hasTag("admin","mod") || (ctx.type==="group" && ctx.g && ctx.g.owner_id===me.id);
+  if(canDel){
+    const db=el("button","🗑️"); db.type="button"; db.title="Apagar mensagem"; db.onclick=()=>deleteMessage(m, table, row);
+    act.append(db);
+  }
+  h.append(act); b.append(h);
   if(m.reply_text) b.append(el("div", m.reply_text, "quote"));
   const mu=m.media_url||"";
   if(mu.startsWith(SUPABASE_URL+"/storage/v1/object/public/chat-media/") && m.media_kind==="image"){ const i=document.createElement("img"); i.src=mu; i.alt="Foto"; i.className="m"; i.loading="lazy"; b.append(i); }
@@ -250,6 +278,38 @@ async function toggleRx(table, id, emoji, mine){
   const r=mine?await q.delete().eq("msg_table", table).eq("msg_id", id).eq("user_id", me.id).eq("emoji", emoji):await q.insert({msg_table: table, msg_id: id, user_id: me.id, emoji});
   if(r.error) toast("Não foi possível reagir."); drawRx(table, id);
 }
+async function deleteMessage(m, table, rowEl){
+  if(!confirm("Apagar essa mensagem?\n\n"+(m.content||"").slice(0,120))) return;
+  let res={error:true};
+  try{
+    if(table==="messages") res=await sb.from("messages").delete().eq("id", m.id);
+    else if(table==="group_messages") res=await sb.from("group_messages").delete().eq("id", m.id);
+    else if(table==="dms") res=await sb.from("dms").delete().eq("id", m.id);
+    else if(table==="announcements") res=await sb.from("announcements").delete().eq("id", m.id);
+    if(res.error) throw res.error;
+  }catch(e){
+    // tenta via RPC de admin
+    try{
+      const r=await sb.rpc("admin_delete_message",{mid:m.id});
+      if(r.error) throw r.error;
+      res={error:null};
+    }catch(err){
+      // tenta delete direto sem RLS check extra
+      try{
+        const r2=await sb.rpc("delete_message_safe",{mid:m.id, tbl:table});
+        if(!r2.error) res={error:null};
+        else throw err;
+      }catch{ return toast("Não foi possível apagar. Rode o SQL de delete no Supabase."); }
+    }
+  }
+  if(rowEl) rowEl.remove();
+  else {
+    // fallback: recarrega feed
+    const feed=$("feed"); const elToRemove = feed.querySelector(`[data-mid="${m.id}"]`); if(elToRemove) elToRemove.remove();
+  }
+  toast("Mensagem apagada.");
+}
+
 function pickRx(table, id, anchor){
   const old=document.getElementById("rxpick"); if(old) old.remove();
   const box=el("div","", "rx"); box.id="rxpick";
