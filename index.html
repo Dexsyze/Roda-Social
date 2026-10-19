@@ -201,8 +201,8 @@ dialog::backdrop{background:rgba(0,0,5,.7)}
         <details class="sec"><summary id="lsum">Redes sociais</summary>
         <div id="lnklist"></div>
         <p class="hint" id="lnkhint"></p></details>
-        <div id="wearw" class="hide"><div class="sec">Tag de grupo</div>
-        <select id="wear"></select><p class="hint">A tag aparece na frente do seu nome.</p></div>
+        <div class="sec">Tag de grupo</div>
+        <select id="wear"></select><p class="hint" id="wearh"></p>
         <p class="err" id="perr" role="alert"></p>
         <div class="row"><button id="psave">Salvar perfil</button><button id="out" class="ghost">Sair da conta</button></div>
       </div>
@@ -781,7 +781,7 @@ async function saveLinks(){ // devolve uma mensagem de erro, ou null se deu cert
 // ---------- perfil ----------
 $("meBtn").onclick = async () => {
   show("profile"); mark(null); closeSide(); $("perr").textContent = "";
-  const [b, i] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id}), loadItems()]); myBirth = b.data; myInv = i.data || 0; drawProfile();
+  const [b, i] = await Promise.all([sb.rpc("my_birthdate"), sb.rpc("invites_of", {uid: me.id}), loadItems(), loadGroups()]); myBirth = b.data; myInv = i.data || 0; drawProfile();
 };
 function drawSwatches(){
   const box = $("swatches"); box.innerHTML = "";
@@ -812,7 +812,8 @@ function drawProfile(){
   drawLinks();
   const w = $("wear"); w.innerHTML = ""; w.append(new Option("Nenhuma", ""));
   groups.filter(g => g.tag && new Date(g.tag_expires) > Date.now() && myGroups.has(g.id)).forEach(g => w.append(new Option(`${g.tag} · ${g.name}`, g.id)));
-  w.value = myProf.worn_group || ""; $("wearw").classList.toggle("hide", w.options.length < 2);
+  w.value = myProf.worn_group || ""; const none = w.options.length < 2; w.disabled = none;
+  $("wearh").textContent = none ? "Nenhum dos seus grupos tem tag ativa. O dono do grupo define a tag em Editar grupo." : "A tag aparece na frente do seu nome.";
 }
 $("pick").onclick = () => $("file").click();
 $("pav").onclick = () => $("file").click();
