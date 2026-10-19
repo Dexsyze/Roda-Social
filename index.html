@@ -460,14 +460,19 @@ function drawGroups(){
   });
 }
 let editing=null;
-function openGroupDlg(g){
+async function openGroupDlg(g){
   editing=g; 
   $("gerr").textContent=""; 
   $("gtitle").textContent=g?"Editar grupo":"Criar grupo"; 
   $("gok").textContent=g?"Salvar":"Criar";
-  // sempre pega dados frescos do groups array
-  const fresh = g ? (groups.find(x=> String(x.id)===String(g.id)) || g) : null;
-  const gg = fresh || g;
+  let gg = g ? (groups.find(x=> String(x.id)===String(g.id)) || g) : null;
+  // busca fresco do banco pra contagem certa
+  if(gg && gg.id){
+    try{
+      const {data} = await sb.from("groups").select(GCOLS).eq("id", gg.id).single();
+      if(data) { gg = data; editing = data; }
+    }catch{}
+  }
   $("gname").value=gg?gg.name:""; 
   $("gdesc").value=gg?gg.description:""; 
   $("gpriv").checked=gg?gg.is_private:false;
@@ -476,22 +481,53 @@ function openGroupDlg(g){
   const gw=$("gtagw"); if(gw) gw.classList.toggle("hide",!(gg&&gg.owner_id===me.id));
   const gt=$("gtag"); if(gt) gt.value=gg&&gg.tag?gg.tag:"";
   const ge=$("gtagemoji"); if(ge) ge.value=gg&&gg.tag_emoji?gg.tag_emoji:"";
-  const left=g&&g.tag_expires?Math.ceil((new Date(g.tag_expires)-Date.now())/864e5):0;
-  const gi=$("gtaginfo"); 
+  const gi=$("gtaginfo");
+  const gtInput=$("gtag"), gcInput=$("gtagc"), geInput=$("gtagemoji");
+  function formatDiff(ms){
+    const abs = Math.abs(ms);
+    const days = Math.floor(abs/864e5);
+    const hours = Math.floor((abs%864e5)/3600000);
+    const mins = Math.floor((abs%3600000)/60000);
+    if(days>0) return `${days}d ${hours}h`;
+    if(hours>0) return `${hours}h ${mins}min`;
+    return `${mins}min`;
+  }
   if(gi){
-    if(left>0){
-      const editsLeft = 5 - (g.tag_edit_count||0);
-      gi.textContent=`Tag ativa por mais ${left} ${left===1?"dia":"dias"}. Edições restantes: ${editsLeft}/5.`;
-    } else {
-      // busca status do trial
+    if(gg && gg.tag && gg.tag_expires){
+      const diff = new Date(gg.tag_expires) - Date.now();
+      const editsLeft = 5 - (gg.tag_edit_count||0);
+      if(diff>0){
+        gi.textContent=`Tag [${gg.tag}] ativa por mais ${formatDiff(diff)}. Edições restantes: ${editsLeft}/5. Expira em ${new Date(gg.tag_expires).toLocaleString('pt-BR')}`;
+        if(gtInput) gtInput.disabled=false;
+        if(gcInput) gcInput.disabled=false;
+        if(geInput) geInput.disabled=false;
+        $("gok").disabled=false;
+      }else{
+        gi.textContent=`Tag [${gg.tag}] EXPIRADA há ${formatDiff(diff)}. Grupo continua funcionando normal, mas a tag não aparece mais. Renove VIP para editar/criar nova tag.`;
+        // trava tudo de tag quando expira
+        if(gtInput) gtInput.disabled=true;
+        if(gcInput) gcInput.disabled=true;
+        if(geInput) geInput.disabled=true;
+        // se não é admin/vip, não deixa salvar tag, mas deixa salvar nome/desc
+        sb.rpc("my_tag_trial_status").then(r=>{
+          const s=r.data&&r.data[0];
+          if(s && !s.can_create){
+            gi.textContent+=` Seu teste já foi usado.`;
+          }
+        });
+      }
+    }else{
+      if(gtInput) gtInput.disabled=false;
+      if(gcInput) gcInput.disabled=false;
+      if(geInput) geInput.disabled=false;
       sb.rpc("my_tag_trial_status").then(r=>{
         const s=r.data&&r.data[0];
-        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta).";
-        else if(!s.trial_used) gi.textContent="Teste grátis de 3 dias (uma vez por conta).";
-        else if(s.can_create) gi.textContent="VIP: tag permanente.";
-        else gi.textContent=`Seu teste já foi usado. Expirou há ${Math.abs(s.days_left)} dias. VIP para criar novas tags.`;
+        if(!s) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag. Grupo funciona normal sem tag.";
+        else if(!s.trial_used) gi.textContent="Teste grátis de 3 dias (uma vez por conta). Máx 3 grupos, 5 edições por tag.";
+        else if(s.can_create) gi.textContent="VIP: tag permanente por 1 ano. Grupo funciona normal mesmo sem tag.";
+        else gi.textContent=`Seu teste de 3 dias já foi usado e expirou. Grupo continua funcionando normal sem tag. VIP para criar novas tags.`;
       });
-      gi.textContent="Teste grátis de 3 dias (uma vez por conta).";
+      gi.textContent="Carregando status do trial...";
     }
   }
   const rm=$("rmtag"); if(rm){ rm.onclick=async()=>{ if(!editing||!editing.id) return; if(!confirm("Remover a tag deste grupo?")) return; const r=await sb.from("groups").update({tag:null,tag_expires:null,tag_color:null,tag_emoji:null}).eq("id",editing.id); if(r.error) return $("gerr").textContent="Erro: "+r.error.message; const gti=$("gtag"); if(gti) gti.value=""; const gte=$("gtagemoji"); if(gte) gte.value=""; toast("Tag do grupo removida."); }; }
