@@ -536,7 +536,7 @@ async function loadGroups(){
     sb.from("group_members").select("group_id").eq("user_id", me.id)]);
   groups = g.data || []; myGroups = new Set((m.data || []).map(x => x.group_id)); drawGroups();
 }
-function openGroup(g, btn){ openCtx({type:"group", id: g.id, g}, g.name, (g.description || "") + (g.is_private ? (g.description ? " · " : "") + "grupo privado" : ""), btn); }
+function openGroup(g, btn){ openCtx({type:"group", id: g.id, g}, g.name, (g.tag && new Date(g.tag_expires) > Date.now() ? "[" + g.tag + "] " : "") + (g.description || "") + (g.is_private ? (g.description ? " · " : "") + "grupo privado" : ""), btn); }
 function drawGroups(){
   const box = $("glist"); box.innerHTML = "";
   if(!groups.length) box.append(el("div", "Nenhum grupo ainda. Crie o primeiro!", "hint"));
@@ -573,10 +573,11 @@ $("gok").onclick = async () => {
     const nt = $("gtag").value.trim().toUpperCase();
     if(nt && nt !== (editing.tag || "")){
       const t = await sb.rpc("set_group_tag", {gid: editing.id, new_tag: nt});
-      if(t.error){ const m = t.error.message; return $("gerr").textContent = m.includes("tag_invalida") ? "A tag precisa ter 2 a 4 letras ou números." : m.includes("tag_em_uso") ? "Essa tag já está em uso." : m.includes("tag_limite") ? "Você já tem outro grupo com tag ativa." : m.includes("tag_paga") ? "Seu teste grátis já foi usado. A tag paga ainda não está disponível." : "Não foi possível definir a tag."; }
-      await loadTags();
+      if(t.error){ const m = t.error.message; return $("gerr").textContent = m.includes("tag_invalida") ? "A tag precisa ter 2 a 4 letras ou números." : m.includes("tag_em_uso") ? "Essa tag já está em uso." : m.includes("tag_limite") ? "Você já tem outro grupo com tag ativa." : m.includes("tag_paga") ? "Seu teste grátis já foi usado. A tag paga ainda não está disponível." : "Não foi possível definir a tag: " + m; }
     }
-    $("gdlg").close(); await loadGroups(); return openGroup(data);
+    const {data: fresh} = await sb.from("groups").select(GCOLS).eq("id", editing.id).single();
+    if(nt && (!fresh || fresh.tag !== nt)) return $("gerr").textContent = "A tag não foi salva no banco. Provavelmente o SQL novo (chat-extras) não foi aplicado no Supabase.";
+    await loadTags(); $("gdlg").close(); await loadGroups(); if(nt && nt !== (editing.tag || "")) toast("Tag " + nt + " salva."); return openGroup(fresh || data);
   }
   const {data, error} = await sb.from("groups").insert({name, description: $("gdesc").value.trim(), owner_id: me.id, is_private: $("gpriv").checked}).select(GCOLS).single();
   if(error) return $("gerr").textContent = "Não foi possível criar o grupo.";
